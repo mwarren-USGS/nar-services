@@ -9,7 +9,8 @@
   
     <modules>
         <!--<module>nar-geoserver</module>-->
-    </modules>
+    <module>nar-geoserver</module>
+  </modules>
     
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -45,8 +46,12 @@
 	
     <repositories>
         <repository>
-            <id>cida-public-releases</id>
+            <id>public-releases</id>
             <url>http://internal.cida.usgs.gov/maven/content/groups/public/</url>
+        </repository>
+        <repository>
+            <id>cida-public-releases</id>
+            <url>http://internal.cida.usgs.gov/maven/content/groups/cida-public/</url>
         </repository>
         <repository>
             <id>cida-releases</id>
