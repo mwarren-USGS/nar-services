@@ -14,14 +14,7 @@
     <properties>
         <geoserver.version>2.4.1</geoserver.version>
     </properties>
-  
-  <repositories>
-        <repository>
-            <id>geoserver</id>
-            <url>http://repo.opengeo.org/</url>
-        </repository>
-  </repositories>
-  
+    
     <dependencies>
         <dependency>
             <groupId>gov.usgs.cida.geoserver</groupId>
@@ -30,24 +23,53 @@
             <type>war</type>
         </dependency>
         <dependency>
-            <groupId>org.geoserver.extension</groupId>
-            <artifactId>wps-core</artifactId>
-            <version>${geoserver.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.geoserver.extension</groupId>
-            <artifactId>web-wps</artifactId>
-            <version>${geoserver.version}</version>
-        </dependency>
-        
-        <dependency>
             <groupId>com.thetransactioncompany</groupId>
             <artifactId>cors-filter</artifactId>
             <version>1.9.2</version>
         </dependency>
     </dependencies>
+
     <build>
-        <plugin>
+        <finalName>${project.artifactId}</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.0.2</version>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>2.2</version>
+                <executions>
+                    <execution>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>exploded</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <overlays>
+                        <overlay>
+                            <groupId>gov.usgs.cida.geoserver</groupId>
+                            <artifactId>geoserver</artifactId>
+                            <excludes>
+                                <!-- we use WEB-INF/web.xml as source for transform below,
+                                     don't allow copy as it will overwrite transformed result -->
+                                <exclude>WEB-INF/web.xml</exclude>
+                            </excludes>
+                        </overlay>
+                    </overlays>
+                   <warSourceExcludes>WEB-INF/web.xml</warSourceExcludes>
+                   <packagingExcludes>META-INF/context.xml</packagingExcludes>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>xml-maven-plugin</artifactId>
                 <version>1.0</version>
@@ -62,7 +84,7 @@
                 <configuration>
                     <transformationSets>
                         <transformationSet>
-                            <dir>target/war/work/org.geoserver/geoserver/WEB-INF</dir>
+                            <dir>target/war/work/gov.usgs.cida.geoserver/geoserver/WEB-INF</dir>
                             <includes>
                                 <include>web.xml</include>
                             </includes>
@@ -85,5 +107,6 @@
                     </dependency>
                 </dependencies>
             </plugin>
+        </plugins>
     </build>
 </project>
