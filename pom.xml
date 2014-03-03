@@ -80,13 +80,5 @@
             <url>http://internal.cida.usgs.gov/maven/content/repositories/cida-snapshots</url>
         </snapshotRepository>
     </distributionManagement>
-    
-    <pluginRepositories>
-        <pluginRepository>
-            <id>plugin-nexus</id>
-            <name>CIDA Plugin repo</name>
-            <url>http://internal.cida.usgs.gov/maven/content/repositories/cida-releases</url>
-        </pluginRepository>
-    </pluginRepositories>
         
 </project>
