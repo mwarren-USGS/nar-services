@@ -4,3 +4,5 @@
 *.jar
 *.war
 *.ear
+/nar-geoserver/target/
+/nar-geoserver/src/main/webapp/META-INF/context.xml
