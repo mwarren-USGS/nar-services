@@ -12,14 +12,14 @@
     <packaging>war</packaging>
     <name>NAWQA Annual Reporting Geoserver</name>
     <properties>
-        <geoserver.version>2.4.1</geoserver.version>
+        <geoserver.version>2.3.2-3</geoserver.version>
     </properties>
     
     <dependencies>
         <dependency>
             <groupId>gov.usgs.cida.geoserver</groupId>
             <artifactId>geoserver</artifactId>
-            <version>${geoserver.version}-1</version>
+            <version>${geoserver.version}</version>
             <type>war</type>
         </dependency>
         <dependency>
