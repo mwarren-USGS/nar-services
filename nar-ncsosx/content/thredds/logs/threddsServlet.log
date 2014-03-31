@@ -1,2 +1,0 @@
-2014-03-31T12:02:35.339 -0500 [      2527][       2] INFO  - threddsServlet - Remote host: ::1 - Request: "GET /nar-ncsosx/ HTTP/1.1"
-2014-03-31T12:02:35.350 -0500 [      2538][       2] INFO  - threddsServlet - Request Completed - 302 - -1 - 11
