@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+    <artifactId>nar-services</artifactId>
+    <groupId>gov.usgs.cida.nar</groupId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
+
+    <groupId>gov.usgs.cida.nar</groupId>
+    <artifactId>nar-ncsosx</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>war</packaging>
+
+    <name>nar-ncsosx</name>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <ncsosx.version>2.1</ncsosx.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>gov.usgs.cida.ncsos</groupId>
+            <artifactId>ncsosx-thredds</artifactId>
+            <version>${ncsosx.version}</version>
+            <type>war</type>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>2.1.1</version>
+                <executions>
+                    <execution>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>exploded</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <overlays>
+                        <overlay>
+                            <groupId>gov.usgs.cida.ncsos</groupId>
+                            <artifactId>ncsosx-thredds</artifactId>
+                            <excludes>
+                                <!-- we use WEB-INF/web.xml as source for transform below,
+                                     don't allow copy as it will overwrite transformed result -->
+                                <exclude>WEB-INF/web.xml</exclude>
+                            </excludes>
+                        </overlay>
+                    </overlays>
+                   <warSourceExcludes>WEB-INF/web.xml</warSourceExcludes>
+                   <packagingExcludes>META-INF/context.xml</packagingExcludes>
+                </configuration>
+                
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

@@ -1,0 +1,11 @@
+initCatalogs(): initializing 1 root catalogs.
+
+**************************************
+Catalog init catalog.xml
+[2014-03-31T17:02:32Z]
+readCatalog(): full path=/home/cschroed/src/nar-services/nar-ncsosx/content/thredds/catalog.xml; path=catalog.xml
+   valid catalog -- ----Catalog Validation
+
+readCatalog(): full path=/home/cschroed/src/nar-services/nar-ncsosx/content/thredds/enhancedCatalog.xml; path=enhancedCatalog.xml
+   valid catalog -- ----Catalog Validation
+

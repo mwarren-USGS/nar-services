@@ -6,3 +6,4 @@
 *.ear
 /nar-geoserver/target/
 /nar-geoserver/src/main/webapp/META-INF/context.xml
+/nar-ncsosx/target/

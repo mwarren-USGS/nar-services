@@ -10,6 +10,7 @@
     <modules>
         <!--<module>nar-geoserver</module>-->
     <module>nar-geoserver</module>
+    <module>nar-ncsosx</module>
   </modules>
     
     <properties>
