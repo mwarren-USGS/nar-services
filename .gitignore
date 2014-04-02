@@ -7,4 +7,5 @@
 /nar-geoserver/target/
 /nar-geoserver/src/main/webapp/META-INF/context.xml
 /nar-ncsosx/target/
+/nar-ncsosx/src/main/webapp/META-INF/context.xml
 nb-configuration.xml
