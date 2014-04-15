@@ -4,11 +4,11 @@
     <parent>
         <artifactId>nar-services</artifactId>
         <groupId>gov.usgs.cida.nar</groupId>
-        <version>0.0.1</version>
+        <version>0.0.2-SNAPSHOT</version>
     </parent>
     <groupId>gov.usgs.cida.nar</groupId>
     <artifactId>nar-geoserver</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.2-SNAPSHOT</version>
     <packaging>war</packaging>
     <name>NAWQA Annual Reporting Geoserver</name>
     <properties>
