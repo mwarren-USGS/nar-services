@@ -33,11 +33,43 @@ public class DownloadService {
 		return Response.ok(new StreamingOutput() {
 			@Override
 			public void write(OutputStream output) throws IOException, WebApplicationException {
-				ZipOutputStream zip = new ZipOutputStream(output, StandardCharsets.UTF_8);
-				zip.putNextEntry(new ZipEntry("siteInfo.csv"));
-				SiteInformationService.streamData(zip);
-				zip.closeEntry();
-				zip.close();
+				ZipOutputStream zip = null;
+				try {
+					zip = new ZipOutputStream(output, StandardCharsets.UTF_8);
+					addRequestSummaryEntry(zip, "Site Information"); //TODO build useful information about the request
+					addSiteInformationEntry(zip);
+				} finally {
+					try {
+						zip.close();
+					} catch (Exception e) {
+						LOG.warn("Unhandled exception closing zip file", e);
+					}
+				}
+			}
+		}).header("Content-Disposition", "attachment; filename=\"siteInfo.zip\"").build();
+	}
+	
+	@GET
+	@Path("/bundle/zip")
+	@Produces("application/zip")
+	public Response downloadZippedBundle() throws NamingException {
+		LOG.debug("Stream siteInfo/zipped started");
+		
+		return Response.ok(new StreamingOutput() {
+			@Override
+			public void write(OutputStream output) throws IOException, WebApplicationException {
+				ZipOutputStream zip = null;
+				try {
+					zip = new ZipOutputStream(output, StandardCharsets.UTF_8);
+					addRequestSummaryEntry(zip, "Zip contents"); //TODO build useful information about the request
+					addSiteInformationEntry(zip);
+				} finally {
+					try {
+						zip.close();
+					} catch (Exception e) {
+						LOG.warn("Unhandled exception closing zip file", e);
+					}
+				}
 			}
 		}).header("Content-Disposition", "attachment; filename=\"siteInfo.zip\"").build();
 	}
@@ -55,4 +87,15 @@ public class DownloadService {
 		};
 	}
 
+	private void addSiteInformationEntry(ZipOutputStream zip) throws IOException {
+		zip.putNextEntry(new ZipEntry("siteInfo.csv"));
+		SiteInformationService.streamData(zip);
+		zip.closeEntry();
+	}
+	
+	private void addRequestSummaryEntry(ZipOutputStream zip, String requestDescription) throws IOException {
+		zip.putNextEntry(new ZipEntry("request.txt"));
+		zip.write(requestDescription.getBytes());
+		zip.closeEntry();
+	}
 }
