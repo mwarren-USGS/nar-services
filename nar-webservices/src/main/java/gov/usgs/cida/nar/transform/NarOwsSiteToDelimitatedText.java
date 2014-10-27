@@ -10,6 +10,11 @@ import java.io.OutputStream;
 public class NarOwsSiteToDelimitatedText implements INarTransform {
 	public static final String SITE_ATTRIBUTE_TITLE = DownloadType.siteAttribute.getTitle();
 	
+	private String delimiter = ","; 
+	public NarOwsSiteToDelimitatedText(String delimiter) {
+		this.delimiter = delimiter;
+	}
+	
 	@Override
 	public void transform(InputStream[] input, OutputStream output)
 			throws IOException {

@@ -2,6 +2,7 @@ package gov.usgs.cida.nar.service;
 
 import gov.usgs.cida.nar.transform.NarOwsSiteToDelimitatedText;
 import gov.usgs.cida.nar.util.JNDISingleton;
+import gov.usgs.cida.nar.util.ServiceParameterUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,16 +22,19 @@ public class SiteInformationService implements INarStreamService {
 	
 	public void streamData(OutputStream output, final Map<String, String[]> params) throws IOException {
 		Client client = ClientBuilder.newClient();
-		InputStream returnStream = (InputStream)client.target(buildSiteInfoRequest())
+		
+		InputStream returnStream = (InputStream)client.target(buildSiteInfoRequest(params))
                 .path("")
                 .request(new MediaType[] {MediaType.APPLICATION_OCTET_STREAM_TYPE})
                 .get(InputStream.class);
 		
-		new NarOwsSiteToDelimitatedText().transform(new InputStream[] { returnStream }, output);
+		new NarOwsSiteToDelimitatedText(ServiceParameterUtils.getDelimiterFromFormat(params)).transform(new InputStream[] { returnStream }, output);
 	}
 	
-	private static String buildSiteInfoRequest() {
+	private static String buildSiteInfoRequest(final Map<String, String[]> params) {
+		//TODO build OGC filter
+		String filter = "";
 		return JNDISingleton.getInstance().getProperty(SITE_INFO_URL_JNDI_NAME) + 
-				"?service=WFS&version=1.0.0&request=GetFeature&typeName=" + SITE_LAYER_NAME + "&outputFormat=csv";
+				"?service=WFS&version=1.0.0&request=GetFeature&typeName=" + SITE_LAYER_NAME + "&outputFormat=csv" + filter;
 	}
 }
