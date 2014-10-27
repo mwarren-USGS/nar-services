@@ -1,9 +1,9 @@
 package gov.usgs.cida.nar.service;
 
 public enum DownloadType {
-	annualLoads("Annual loads"),
+	annualLoad("Annual loads"),
 	annualFlow("Annual flow"),
-	monthlyLoads("Monthly loads"),
+	monthlyLoad("Monthly loads"),
 	monthlyFlow("Monthly flow"),
 	dailyFlow("Daily flow"),
 	discreteQw("Discrete QW"),

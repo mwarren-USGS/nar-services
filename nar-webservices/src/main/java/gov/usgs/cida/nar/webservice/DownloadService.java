@@ -4,6 +4,7 @@ import gov.usgs.cida.nar.service.DownloadServiceParameters;
 import gov.usgs.cida.nar.service.DownloadType;
 import gov.usgs.cida.nar.service.SiteInformationService;
 import gov.usgs.cida.nar.util.DescriptionLoaderSingleton;
+import gov.usgs.cida.nar.util.ServiceParameterUtils;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -44,8 +45,35 @@ public class DownloadService {
 				ZipOutputStream zip = null;
 				try {
 					zip = new ZipOutputStream(output, StandardCharsets.UTF_8);
-					addRequestSummaryEntry(zip, buildRequestDescriptionFromParams(params)); //TODO build useful information about the request
-					addSiteInformationEntry(zip, params);
+					addRequestSummaryEntry(zip, buildRequestDescriptionFromParams(params));
+					
+					if(ServiceParameterUtils.isSiteInformationRequested(params)) {
+						addSiteInformationEntry(zip, params);
+					}
+					
+					if(ServiceParameterUtils.isDiscreteQwRequested(params)) {
+						//TODO hook up
+					}
+
+					if(ServiceParameterUtils.isAnnualLoadsRequested(params)) {
+						//TODO hook up
+					}
+
+					if(ServiceParameterUtils.isMonthlyLoadsRequested(params)) {
+						//TODO hook up
+					}
+
+					if(ServiceParameterUtils.isDailyFlowRequested(params)) {
+						//TODO hook up
+					}
+
+					if(ServiceParameterUtils.isAnnualFlowRequested(params)) {
+						//TODO hook up
+					}
+
+					if(ServiceParameterUtils.isMonthlyFlowRequested(params)) {
+						//TODO hook up
+					}
 				} finally {
 					try {
 						zip.close();
@@ -55,33 +83,6 @@ public class DownloadService {
 				}
 			}
 		}).header("Content-Disposition", "attachment; filename=\"data.zip\"").build();
-	}
-	
-	@GET
-	@Path("/siteAttributes/zip")
-	@Produces("application/zip")
-	public Response downloadZippedSiteInformation(@Context final HttpServletRequest request) throws NamingException {
-		LOG.debug("Stream siteInfo/zipped started");
-		@SuppressWarnings("unchecked")
-		final Map<String, String[]> params = request.getParameterMap();
-		
-		return Response.ok(new StreamingOutput() {
-			@Override
-			public void write(OutputStream output) throws IOException, WebApplicationException {
-				ZipOutputStream zip = null;
-				try {
-					zip = new ZipOutputStream(output, StandardCharsets.UTF_8);
-					addRequestSummaryEntry(zip, buildRequestDescriptionFromParams(params)); //TODO build useful information about the request
-					addSiteInformationEntry(zip, params);
-				} finally {
-					try {
-						zip.close();
-					} catch (Exception e) {
-						LOG.warn("Unhandled exception closing zip file", e);
-					}
-				}
-			}
-		}).header("Content-Disposition", "attachment; filename=\"" + SiteInformationService.SITE_ATTRIBUTE_OUT_FILENAME +".zip\"").build();
 	}
 
 	@GET
@@ -132,15 +133,43 @@ public class DownloadService {
 		}
 		sb.append("\n\n");
 		
-		//List data headers (TODO listing all for now)
-		for(DownloadType t : DownloadType.values()) {
-			sb.append(t.getTitle());
-			sb.append("\n");
-			sb.append(DescriptionLoaderSingleton.getDescription(t.getTitle()));
-			sb.append("\n\n");
+		//List data headers which match request
+		if(ServiceParameterUtils.isSiteInformationRequested(params)) {
+			appendDataTypeDescription(sb, DownloadType.siteAttribute);
+		}
+
+		if(ServiceParameterUtils.isDiscreteQwRequested(params)) {
+			appendDataTypeDescription(sb, DownloadType.discreteQw);
+		}
+
+		if(ServiceParameterUtils.isAnnualLoadsRequested(params)) {
+			appendDataTypeDescription(sb, DownloadType.annualLoad);
+		}
+
+		if(ServiceParameterUtils.isMonthlyLoadsRequested(params)) {
+			appendDataTypeDescription(sb, DownloadType.monthlyLoad);
+		}
+
+		if(ServiceParameterUtils.isDailyFlowRequested(params)) {
+			appendDataTypeDescription(sb, DownloadType.dailyFlow);
+		}
+
+		if(ServiceParameterUtils.isAnnualFlowRequested(params)) {
+			appendDataTypeDescription(sb, DownloadType.annualFlow);
+		}
+
+		if(ServiceParameterUtils.isMonthlyFlowRequested(params)) {
+			appendDataTypeDescription(sb, DownloadType.monthlyFlow);
 		}
 		
 		return sb.toString();
+	}
+	
+	private void appendDataTypeDescription(StringBuffer sb, DownloadType t) {
+		sb.append(t.getTitle());
+		sb.append("\n");
+		sb.append(DescriptionLoaderSingleton.getDescription(t.getTitle()));
+		sb.append("\n\n");
 	}
 	
 	private String serializeParamaterList(String[] params) {
