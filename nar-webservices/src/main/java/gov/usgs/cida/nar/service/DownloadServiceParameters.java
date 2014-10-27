@@ -3,8 +3,9 @@ package gov.usgs.cida.nar.service;
 public enum DownloadServiceParameters {
 	format("Format"),
 	dataType("Data type"),
+	qwDataType("Water Quality Data type"),
 	constituent("Constituent"),
-	siteType("Constituent"),
+	siteType("Site Type"),
 	stationId("Station ID"),
 	state("State"),
 	startDateTime("Start Date/Time"),

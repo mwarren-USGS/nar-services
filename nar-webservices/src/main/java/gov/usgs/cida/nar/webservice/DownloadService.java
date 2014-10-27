@@ -94,14 +94,14 @@ public class DownloadService {
 		return new StreamingOutput() {
 			@Override
 			public void write(OutputStream output) throws IOException, WebApplicationException {
-				SiteInformationService.streamData(output, params);
+				new SiteInformationService().streamData(output, params);
 			}
 		};
 	}
 
 	private void addSiteInformationEntry(ZipOutputStream zip, Map<String, String[]> params) throws IOException {
 		zip.putNextEntry(new ZipEntry(SiteInformationService.SITE_ATTRIBUTE_OUT_FILENAME + ".csv"));
-		SiteInformationService.streamData(zip, params);
+		new SiteInformationService().streamData(zip, params);
 		zip.closeEntry();
 	}
 	
@@ -122,7 +122,7 @@ public class DownloadService {
 				sb.append(" - ");
 				sb.append(parm.getTitle());
 				sb.append(": ");
-				sb.append(params.get(parm.name()));
+				sb.append(serializeParamaterList(params.get(parm.name())));
 				sb.append("\n");
 				parameterPassed = true;
 			}
@@ -141,5 +141,18 @@ public class DownloadService {
 		}
 		
 		return sb.toString();
+	}
+	
+	private String serializeParamaterList(String[] params) {
+		StringBuffer sb = new StringBuffer();
+		
+		for(String ps : params) {
+			for(String p : ps.split(",")) {
+				sb.append(p);
+				sb.append(", ");
+			}
+		}
+		//remove trailing ", "
+		return sb.substring(0, sb.length() - 2);
 	}
 }
