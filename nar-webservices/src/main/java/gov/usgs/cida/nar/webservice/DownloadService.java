@@ -1,6 +1,7 @@
 package gov.usgs.cida.nar.webservice;
 
 import gov.usgs.cida.nar.service.DownloadServiceParameters;
+import static gov.usgs.cida.nar.service.DownloadServiceParameters.*;
 import gov.usgs.cida.nar.service.DownloadType;
 import gov.usgs.cida.nar.service.SiteInformationService;
 import gov.usgs.cida.nar.util.DescriptionLoaderSingleton;
@@ -9,17 +10,16 @@ import gov.usgs.cida.nar.util.ServiceParameterUtils;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import javax.naming.NamingException;
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
@@ -34,44 +34,64 @@ public class DownloadService {
 	@GET
 	@Path("/bundle/zip")
 	@Produces("application/zip")
-	public Response downloadZippedBundle(@Context final HttpServletRequest request) throws NamingException {
+	public Response downloadZippedBundle(
+			@QueryParam(FORMAT_PARAM) final List<String> format,
+			@QueryParam(DATA_TYPE_PARAM) final List<String> dataType,
+			@QueryParam(QW_DATA_TYPE_PARAM) final List<String> qwDataType,
+			@QueryParam(STREAM_FLOW_TYPE_PARAM) final List<String> streamFlowType,
+			@QueryParam(CONSTITUENT_PARAM) final List<String> constituent,
+			@QueryParam(SITE_TYPE_PARAM) final List<String> siteType,
+			@QueryParam(STATION_ID_PARAM) final List<String> stationId,
+			@QueryParam(STATE_PARAM) final List<String> state,
+			@QueryParam(START_DATE_PARAM) final List<String> startDateTime,
+			@QueryParam(END_DATE_PARAM) final List<String> endDateTime) throws NamingException {
 		LOG.debug("Stream full zipped bundle started");
-		@SuppressWarnings("unchecked")
-		final Map<String, String[]> params = request.getParameterMap();
-		
+
 		return Response.ok(new StreamingOutput() {
 			@Override
 			public void write(OutputStream output) throws IOException, WebApplicationException {
 				ZipOutputStream zip = null;
 				try {
 					zip = new ZipOutputStream(output, StandardCharsets.UTF_8);
-					addRequestSummaryEntry(zip, buildRequestDescriptionFromParams(params));
+					addRequestSummaryEntry(zip, buildRequestDescriptionFromParams(format,
+							dataType,
+							qwDataType,
+							streamFlowType,
+							constituent,
+							siteType,
+							stationId,
+							state,
+							startDateTime,
+							endDateTime));
 					
-					if(ServiceParameterUtils.isSiteInformationRequested(params)) {
-						addSiteInformationEntry(zip, params);
+					if(ServiceParameterUtils.isSiteInformationRequested(dataType)) {
+						addSiteInformationEntry(zip, format,
+								siteType,
+								stationId,
+								state);
 					}
 					
-					if(ServiceParameterUtils.isDiscreteQwRequested(params)) {
+					if(ServiceParameterUtils.isDiscreteQwRequested(dataType, qwDataType)) {
 						//TODO hook up
 					}
 
-					if(ServiceParameterUtils.isAnnualLoadsRequested(params)) {
+					if(ServiceParameterUtils.isAnnualLoadsRequested(dataType, qwDataType)) {
 						//TODO hook up
 					}
 
-					if(ServiceParameterUtils.isMonthlyLoadsRequested(params)) {
+					if(ServiceParameterUtils.isMonthlyLoadsRequested(dataType, qwDataType)) {
 						//TODO hook up
 					}
 
-					if(ServiceParameterUtils.isDailyFlowRequested(params)) {
+					if(ServiceParameterUtils.isDailyFlowRequested(dataType, streamFlowType)) {
 						//TODO hook up
 					}
 
-					if(ServiceParameterUtils.isAnnualFlowRequested(params)) {
+					if(ServiceParameterUtils.isAnnualFlowRequested(dataType, streamFlowType)) {
 						//TODO hook up
 					}
 
-					if(ServiceParameterUtils.isMonthlyFlowRequested(params)) {
+					if(ServiceParameterUtils.isMonthlyFlowRequested(dataType, streamFlowType)) {
 						//TODO hook up
 					}
 				} finally {
@@ -88,21 +108,35 @@ public class DownloadService {
 	@GET
 	@Path("/siteAttributes")
 	@Produces(MediaType.TEXT_PLAIN)
-	public StreamingOutput downloadSiteInformation(@Context final HttpServletRequest request) throws NamingException {
+	public StreamingOutput downloadSiteInformation(
+			@QueryParam(FORMAT_PARAM) final List<String> format,
+			@QueryParam(SITE_TYPE_PARAM) final List<String> siteType,
+			@QueryParam(STATION_ID_PARAM) final List<String> stationId,
+			@QueryParam(STATE_PARAM) final List<String> state) throws NamingException {
 		LOG.debug("Streaming siteInfo/plain started");
-		@SuppressWarnings("unchecked")
-		final Map<String, String[]> params = request.getParameterMap();
 		return new StreamingOutput() {
 			@Override
 			public void write(OutputStream output) throws IOException, WebApplicationException {
-				new SiteInformationService().streamData(output, params);
+				new SiteInformationService().streamData(output, format,
+						siteType,
+						stationId,
+						state);
 			}
 		};
 	}
 
-	private void addSiteInformationEntry(ZipOutputStream zip, Map<String, String[]> params) throws IOException {
+	private void addSiteInformationEntry(ZipOutputStream zip, 
+			final List<String> format,
+			final List<String> siteType,
+			final List<String> stationId,
+			final List<String> state
+			) throws IOException {
 		zip.putNextEntry(new ZipEntry(SiteInformationService.SITE_ATTRIBUTE_OUT_FILENAME + ".csv"));
-		new SiteInformationService().streamData(zip, params);
+		new SiteInformationService().streamData(zip, 
+				format,
+				siteType,
+				stationId,
+				state);
 		zip.closeEntry();
 	}
 	
@@ -112,53 +146,59 @@ public class DownloadService {
 		zip.closeEntry();
 	}
 	
-	private String buildRequestDescriptionFromParams(Map<String, String[]> params) {
+	private String buildRequestDescriptionFromParams(
+			final List<String> format,
+			final List<String> dataType,
+			final List<String> qwDataType,
+			final List<String> streamFlowType,
+			final List<String> constituent,
+			final List<String> siteType,
+			final List<String> stationId,
+			final List<String> state,
+			final List<String> startDateTime,
+			final List<String> endDateTime) {
 		StringBuffer sb = new StringBuffer();
 		
 		//List service criteria
 		sb.append("Request criteria provided\n");
-		boolean parameterPassed = false;
-		for(DownloadServiceParameters parm : DownloadServiceParameters.values()) {
-			if(params.keySet().contains(parm.name())) {
-				sb.append(" - ");
-				sb.append(parm.getTitle());
-				sb.append(": ");
-				sb.append(serializeParamaterList(params.get(parm.name())));
-				sb.append("\n");
-				parameterPassed = true;
-			}
-		}
-		if(!parameterPassed) {
-			sb.append("- NONE\n");
-		}
+		prettyPrintParamList(sb, format, DownloadServiceParameters.FORMAT_PARAM);
+		prettyPrintParamList(sb, dataType, DownloadServiceParameters.DATA_TYPE_PARAM);
+		prettyPrintParamList(sb, qwDataType, DownloadServiceParameters.QW_DATA_TYPE_PARAM);
+		prettyPrintParamList(sb, streamFlowType, DownloadServiceParameters.STREAM_FLOW_TYPE_PARAM);
+		prettyPrintParamList(sb, constituent, DownloadServiceParameters.CONSTITUENT_PARAM);
+		prettyPrintParamList(sb, siteType, DownloadServiceParameters.SITE_TYPE_PARAM);
+		prettyPrintParamList(sb, stationId, DownloadServiceParameters.STATION_ID_PARAM);
+		prettyPrintParamList(sb, state, DownloadServiceParameters.STATE_PARAM);
+		prettyPrintParamList(sb, startDateTime, DownloadServiceParameters.START_DATE_PARAM);
+		prettyPrintParamList(sb, endDateTime, DownloadServiceParameters.END_DATE_PARAM);
 		sb.append("\n\n");
 		
 		//List data headers which match request
-		if(ServiceParameterUtils.isSiteInformationRequested(params)) {
+		if(ServiceParameterUtils.isSiteInformationRequested(dataType)) {
 			appendDataTypeDescription(sb, DownloadType.siteAttribute);
 		}
 
-		if(ServiceParameterUtils.isDiscreteQwRequested(params)) {
+		if(ServiceParameterUtils.isDiscreteQwRequested(dataType, qwDataType)) {
 			appendDataTypeDescription(sb, DownloadType.discreteQw);
 		}
 
-		if(ServiceParameterUtils.isAnnualLoadsRequested(params)) {
+		if(ServiceParameterUtils.isAnnualLoadsRequested(dataType, qwDataType)) {
 			appendDataTypeDescription(sb, DownloadType.annualLoad);
 		}
 
-		if(ServiceParameterUtils.isMonthlyLoadsRequested(params)) {
+		if(ServiceParameterUtils.isMonthlyLoadsRequested(dataType, qwDataType)) {
 			appendDataTypeDescription(sb, DownloadType.monthlyLoad);
 		}
 
-		if(ServiceParameterUtils.isDailyFlowRequested(params)) {
+		if(ServiceParameterUtils.isDailyFlowRequested(dataType, streamFlowType)) {
 			appendDataTypeDescription(sb, DownloadType.dailyFlow);
 		}
 
-		if(ServiceParameterUtils.isAnnualFlowRequested(params)) {
+		if(ServiceParameterUtils.isAnnualFlowRequested(dataType, streamFlowType)) {
 			appendDataTypeDescription(sb, DownloadType.annualFlow);
 		}
 
-		if(ServiceParameterUtils.isMonthlyFlowRequested(params)) {
+		if(ServiceParameterUtils.isMonthlyFlowRequested(dataType, streamFlowType)) {
 			appendDataTypeDescription(sb, DownloadType.monthlyFlow);
 		}
 		
@@ -172,16 +212,17 @@ public class DownloadService {
 		sb.append("\n\n");
 	}
 	
-	private String serializeParamaterList(String[] params) {
-		StringBuffer sb = new StringBuffer();
-		
-		for(String ps : params) {
-			for(String p : ps.split(",")) {
-				sb.append(p);
+	private void prettyPrintParamList(StringBuffer sb, List<String> values, String name) {
+		if(values != null && values.size() > 0) {
+			sb.append(" - ");
+			sb.append(DownloadServiceParameters.valueOf(name).getTitle());
+			sb.append(": ");
+			for(String v : values) {
+				sb.append(v);
 				sb.append(", ");
 			}
+			sb.delete(sb.length() - 2, sb.length());
+			sb.append("\n");
 		}
-		//remove trailing ", "
-		return sb.substring(0, sb.length() - 2);
 	}
 }
