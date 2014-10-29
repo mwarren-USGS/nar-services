@@ -2,9 +2,9 @@ package gov.usgs.cida.nar.service;
 
 import gov.usgs.cida.nar.connector.WFSConnector;
 import gov.usgs.cida.nar.util.JNDISingleton;
+
 import gov.usgs.cida.nude.column.Column;
 import gov.usgs.cida.nude.column.ColumnGrouping;
-import gov.usgs.cida.nude.filter.ColumnTransform;
 import gov.usgs.cida.nude.filter.FilterStageBuilder;
 import gov.usgs.cida.nude.filter.FilterStep;
 import gov.usgs.cida.nude.filter.NudeFilterBuilder;
@@ -13,39 +13,31 @@ import gov.usgs.cida.nude.out.StreamResponse;
 import gov.usgs.cida.nude.out.TableResponse;
 import gov.usgs.cida.nude.plan.Plan;
 import gov.usgs.cida.nude.plan.PlanStep;
-import gov.usgs.cida.nude.resultset.inmemory.TableRow;
 import gov.usgs.webservices.framework.basic.MimeType;
-
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.MediaType;
 import javax.xml.stream.XMLStreamException;
 
-public class SiteInformationService implements INarStreamService {
+public class SiteInformationService {
 	public static final String SITE_ATTRIBUTE_TITLE = DownloadType.siteAttribute.getTitle();
 	public static final String SITE_ATTRIBUTE_OUT_FILENAME = SITE_ATTRIBUTE_TITLE.replaceAll(" ", "_");
 	
 	private static final String SITE_INFO_URL_JNDI_NAME = "nar.endpoint.ows";
 	private static final String SITE_LAYER_NAME = "NAR:JD_NFSN_sites0914";
 	
-	public void streamData(OutputStream output, final Map<String, String[]> params) throws IOException {
-		Client client = ClientBuilder.newClient();
+	public void streamData(OutputStream output, 
+			final List<String> format,
+			final List<String> siteType,
+			final List<String> stationId,
+			final List<String> state) throws IOException {
 		
-//		InputStream returnStream = (InputStream)client.target(buildSiteInfoRequest(params))
-//                .path("")
-//                .request(new MediaType[] {MediaType.APPLICATION_OCTET_STREAM_TYPE})
-//                .get(InputStream.class);
 		String wfsUrl = JNDISingleton.getInstance().getProperty(SITE_INFO_URL_JNDI_NAME);
+		// TODO build filter from parameter input
 		final WFSConnector wfsConnector = new WFSConnector(wfsUrl, SITE_LAYER_NAME, null);
 		List<PlanStep> steps = new LinkedList<>();
 		PlanStep connectorStep = new PlanStep() {
@@ -67,6 +59,7 @@ public class SiteInformationService implements INarStreamService {
 		ColumnGrouping fromConnectorStep = connectorStep.getExpectedColumns();
 		for (Column col : fromConnectorStep) {
 			if (!fromConnectorStep.getPrimaryKey().equals(col)) {
+				// TODO wrap in quotes to preserve leading 0
 //				final Column outCol = col;
 //				fsb.addTransform(col, new ColumnTransform() {
 //					@Override
@@ -109,10 +102,4 @@ public class SiteInformationService implements INarStreamService {
 		}
 	}
 	
-	private static String buildSiteInfoRequest(final Map<String, String[]> params) {
-		//TODO build OGC filter
-		String filter = "";
-		return JNDISingleton.getInstance().getProperty(SITE_INFO_URL_JNDI_NAME) + 
-				"?service=WFS&version=1.0.0&request=GetFeature&typeName=" + SITE_LAYER_NAME + "&outputFormat=csv" + filter;
-	}
 }
