@@ -1,18 +1,24 @@
 package gov.usgs.cida.nar.connector;
 
 import gov.usgs.cida.nar.parser.CSVDataParser;
+import gov.usgs.cida.nar.resultset.WFSResultSet;
 import gov.usgs.cida.nude.column.Column;
 import gov.usgs.cida.nude.column.ColumnGrouping;
 import gov.usgs.cida.nude.column.SimpleColumn;
 import gov.usgs.cida.nude.connector.IConnector;
 import gov.usgs.cida.nude.connector.parser.IParser;
-import gov.usgs.cida.nude.resultset.http.HttpResultSet;
-import java.io.InputStream;
+import gov.usgs.cida.wfs.HttpComponentsWFSClient;
+import gov.usgs.cida.wfs.WFSClientInterface;
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Level;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
+import org.opengis.filter.Filter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -20,12 +26,24 @@ import org.joda.time.format.DateTimeFormatterBuilder;
  */
 public class WFSConnector implements IConnector {
 	
-	private InputStream input;
-	private ColumnGrouping cg;
+	private static final Logger log = LoggerFactory.getLogger(WFSConnector.class);
 	
-	public WFSConnector (InputStream input) {
-		this.input = input;
+	private ColumnGrouping cg;
+	private WFSClientInterface client;
+	private String typeName;
+	private Filter filter;
+	
+	public WFSConnector (String wfsEndpoint, String typeName, Filter filter) {
+		this.client = new HttpComponentsWFSClient();
+		try {
+			this.client.setupDatastoreFromEndpoint(wfsEndpoint);
+		}
+		catch (IOException ex) {
+			log.error("Could not set up wfs connector", ex);
+		}
 		this.cg = makeColumnGrouping();
+		this.typeName = typeName;
+		this.filter = filter;
 	}
 	
 	private static ColumnGrouping makeColumnGrouping() {
@@ -52,16 +70,24 @@ public class WFSConnector implements IConnector {
 
 	@Override
 	public ResultSet getResultSet() {
-		return new HttpResultSet(new StupidHttpEntity(input), getParser());
+		WFSResultSet wfsResultSet = null;
+		try {
+			wfsResultSet = new WFSResultSet(client.getFeatureCollection(this.typeName, this.filter), getExpectedColumns());
+		}
+		catch (IOException ex) {
+			log.error("Unable to get wfs result set from source", ex);
+		}
+		return wfsResultSet;
 	}
 
 	@Override
 	public IParser getParser() {
-		// TODO replace with proper WFS parser
-		DateTimeFormatter fidFormatter = new DateTimeFormatterBuilder().appendLiteral("JD_NFSN_sites0914.").appendYear(1, 4).toFormatter();
-		return new CSVDataParser(this.cg, "FID", new Column[] {
-			this.cg.get(1), null, this.cg.get(2), this.cg.get(3), this.cg.get(4), this.cg.get(5), this.cg.get(6)
-		}, this.cg.getPrimaryKey(), fidFormatter);
+//		// TODO replace with proper WFS parser
+//		DateTimeFormatter fidFormatter = new DateTimeFormatterBuilder().appendLiteral("JD_NFSN_sites0914.").appendYear(1, 4).toFormatter();
+//		return new CSVDataParser(this.cg, "FID", new Column[] {
+//			this.cg.get(1), null, this.cg.get(2), this.cg.get(3), this.cg.get(4), this.cg.get(5), this.cg.get(6)
+//		}, this.cg.getPrimaryKey(), fidFormatter);
+		return null;
 	}
 
 	@Override
@@ -71,7 +97,7 @@ public class WFSConnector implements IConnector {
 
 	@Override
 	public boolean isReady() {
-		return (input != null);
+		return true;
 	}
 
 	@Override

@@ -41,12 +41,12 @@ public class SiteInformationService implements INarStreamService {
 	public void streamData(OutputStream output, final Map<String, String[]> params) throws IOException {
 		Client client = ClientBuilder.newClient();
 		
-		InputStream returnStream = (InputStream)client.target(buildSiteInfoRequest(params))
-                .path("")
-                .request(new MediaType[] {MediaType.APPLICATION_OCTET_STREAM_TYPE})
-                .get(InputStream.class);
-		
-		final WFSConnector wfsConnector = new WFSConnector(returnStream);
+//		InputStream returnStream = (InputStream)client.target(buildSiteInfoRequest(params))
+//                .path("")
+//                .request(new MediaType[] {MediaType.APPLICATION_OCTET_STREAM_TYPE})
+//                .get(InputStream.class);
+		String wfsUrl = JNDISingleton.getInstance().getProperty(SITE_INFO_URL_JNDI_NAME);
+		final WFSConnector wfsConnector = new WFSConnector(wfsUrl, SITE_LAYER_NAME, null);
 		List<PlanStep> steps = new LinkedList<>();
 		PlanStep connectorStep = new PlanStep() {
 
