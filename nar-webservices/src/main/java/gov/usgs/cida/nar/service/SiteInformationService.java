@@ -76,7 +76,7 @@ public class SiteInformationService {
 		
 		steps.add(wrapInQuotesFilterStep);
 		List<Column> wrapped = wrapInQuotesFilterStep.getExpectedColumns().getColumns();
-		ColumnGrouping removed = new ColumnGrouping(wrapped.subList(1, wrapped.size() - 1));
+		ColumnGrouping removed = new ColumnGrouping(wrapped.subList(1, wrapped.size()));
 		FilterStep removeFIDFilterStep = new FilterStep(new NudeFilterBuilder(removed)
 				.addFilterStage(new FilterStageBuilder(removed)
 						.buildFilterStage())
