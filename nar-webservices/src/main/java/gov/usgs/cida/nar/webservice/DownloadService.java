@@ -2,7 +2,9 @@ package gov.usgs.cida.nar.webservice;
 
 import gov.usgs.cida.nar.service.DiscreteQwService;
 import gov.usgs.cida.nar.service.DownloadServiceParameters;
+
 import static gov.usgs.cida.nar.service.DownloadServiceParameters.*;
+
 import gov.usgs.cida.nar.service.DownloadType;
 import gov.usgs.cida.nar.service.SiteInformationService;
 import gov.usgs.cida.nar.util.DescriptionLoaderSingleton;
@@ -12,6 +14,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -138,9 +141,17 @@ public class DownloadService {
 		zip.closeEntry();
 	}
 	
-	private void addDiscreteQwEntry(ZipOutputStream zip, Map<String, String[]> params) throws IOException {
+	private void addDiscreteQwEntry(ZipOutputStream zip,
+			final List<String> format,
+			final List<String> qwDataType,
+			final List<String> constituent,
+			final List<String> siteType,
+			final List<String> stationId,
+			final List<String> state,
+			final List<String> startDateTime,
+			final List<String> endDateTime) throws IOException {
 		zip.putNextEntry(new ZipEntry(DiscreteQwService.DISCRETE_QW_OUT_FILENAME + ".csv"));
-		new DiscreteQwService().streamData(zip, params);
+		new DiscreteQwService().streamData(zip, format, qwDataType, constituent, siteType, stationId, state, startDateTime, endDateTime);
 		zip.closeEntry();
 	}
 	

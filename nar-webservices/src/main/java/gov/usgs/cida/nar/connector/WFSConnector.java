@@ -1,6 +1,5 @@
 package gov.usgs.cida.nar.connector;
 
-import gov.usgs.cida.nar.parser.CSVDataParser;
 import gov.usgs.cida.nar.resultset.WFSResultSet;
 import gov.usgs.cida.nude.column.Column;
 import gov.usgs.cida.nude.column.ColumnGrouping;
@@ -13,9 +12,6 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.logging.Level;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.DateTimeFormatterBuilder;
 import org.opengis.filter.Filter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,11 +78,6 @@ public class WFSConnector implements IConnector {
 
 	@Override
 	public IParser getParser() {
-//		// TODO replace with proper WFS parser
-//		DateTimeFormatter fidFormatter = new DateTimeFormatterBuilder().appendLiteral("JD_NFSN_sites0914.").appendYear(1, 4).toFormatter();
-//		return new CSVDataParser(this.cg, "FID", new Column[] {
-//			this.cg.get(1), null, this.cg.get(2), this.cg.get(3), this.cg.get(4), this.cg.get(5), this.cg.get(6)
-//		}, this.cg.getPrimaryKey(), fidFormatter);
 		return null;
 	}
 

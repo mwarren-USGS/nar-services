@@ -6,6 +6,7 @@ import gov.usgs.cida.nar.util.ServiceParameterUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
 import java.util.Map;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -17,22 +18,30 @@ import javax.ws.rs.core.Response;
  *
  * @author Jordan Walker <jiwalker@usgs.gov>
  */
-public class DiscreteQwService implements INarStreamService {
+public class DiscreteQwService {
 	
 	public static final String DISCRETE_QW_TITLE = DownloadType.discreteQw.getTitle();
 	public static final String DISCRETE_QW_OUT_FILENAME = DISCRETE_QW_TITLE.replaceAll(" ", "_");
 	
 	private static final String DISCRETE_QW_URL_JNDI_NAME = "nar.endpoint.sos";
 
-	@Override
-	public void streamData(OutputStream output, Map<String, String[]> params) throws IOException {
+	public void streamData(OutputStream output,
+			final List<String> format,
+			final List<String> qwDataType,
+			final List<String> constituent,
+			final List<String> siteType,
+			final List<String> stationId,
+			final List<String> state,
+			final List<String> startDateTime,
+			final List<String> endDateTime) throws IOException {
 		Client client = ClientBuilder.newClient();
+		// TODO do this proper
 		Response response = client.target(buildDiscreteQwEndpoint())
 				.path("")
 				.request(new MediaType[] {MediaType.APPLICATION_JSON_TYPE})
-				.post(buildDiscreteQwPost(params));
+				.post(buildDiscreteQwPost(null));
 		try (InputStream returnStream = response.readEntity(InputStream.class)) {
-			new NarSosTimeSeriesToDelimitedText(ServiceParameterUtils.getDelimiterFromFormat(params)).transform(new InputStream[] { returnStream }, output);
+			new NarSosTimeSeriesToDelimitedText(ServiceParameterUtils.getDelimiterFromFormat(format)).transform(new InputStream[] { returnStream }, output);
 		}
 	}
 	
