@@ -1,5 +1,6 @@
 package gov.usgs.cida.nar.webservice;
 
+import gov.usgs.cida.nar.service.DiscreteQwService;
 import gov.usgs.cida.nar.service.DownloadServiceParameters;
 import gov.usgs.cida.nar.service.DownloadType;
 import gov.usgs.cida.nar.service.SiteInformationService;
@@ -23,6 +24,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
+import org.apache.commons.io.IOUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +54,7 @@ public class DownloadService {
 					}
 					
 					if(ServiceParameterUtils.isDiscreteQwRequested(params)) {
-						//TODO hook up
+						addDiscreteQwEntry(zip, params);
 					}
 
 					if(ServiceParameterUtils.isAnnualLoadsRequested(params)) {
@@ -75,11 +77,7 @@ public class DownloadService {
 						//TODO hook up
 					}
 				} finally {
-					try {
-						zip.close();
-					} catch (Exception e) {
-						LOG.warn("Unhandled exception closing zip file", e);
-					}
+						IOUtils.closeQuietly(zip);
 				}
 			}
 		}).header("Content-Disposition", "attachment; filename=\"data.zip\"").build();
@@ -99,10 +97,16 @@ public class DownloadService {
 			}
 		};
 	}
-
+	
 	private void addSiteInformationEntry(ZipOutputStream zip, Map<String, String[]> params) throws IOException {
 		zip.putNextEntry(new ZipEntry(SiteInformationService.SITE_ATTRIBUTE_OUT_FILENAME + ".csv"));
 		new SiteInformationService().streamData(zip, params);
+		zip.closeEntry();
+	}
+	
+	private void addDiscreteQwEntry(ZipOutputStream zip, Map<String, String[]> params) throws IOException {
+		zip.putNextEntry(new ZipEntry(DiscreteQwService.DISCRETE_QW_OUT_FILENAME + ".csv"));
+		new DiscreteQwService().streamData(zip, params);
 		zip.closeEntry();
 	}
 	
