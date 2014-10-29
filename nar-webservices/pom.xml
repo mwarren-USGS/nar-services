@@ -29,6 +29,7 @@
 			<scope>provided</scope>
 			<version>${servlet-api.version}</version>
 		</dependency>
+		<!-- Test Dependencies -->
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -53,6 +54,7 @@
 			<version>${hamcrest.version}</version>
 			<scope>test</scope>
 		</dependency>
+		<!-- End Test Dependencies -->
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
@@ -94,6 +96,11 @@
 			<groupId>gov.usgs.cida</groupId>
 			<artifactId>dynamicProperties</artifactId>
 			<version>1.0.2</version>
+		</dependency>
+		<dependency>
+			<groupId>gov.usgs.cida.nude</groupId>
+			<artifactId>nude</artifactId>
+			<version>1.1.6</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
