@@ -1,6 +1,7 @@
 package gov.usgs.cida.nar.service;
 
 import gov.usgs.cida.nar.connector.WFSConnector;
+import gov.usgs.cida.nar.util.DescriptionLoaderSingleton;
 import gov.usgs.cida.nar.util.JNDISingleton;
 
 import gov.usgs.cida.nude.column.Column;
@@ -22,8 +23,12 @@ import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
 import javax.xml.stream.XMLStreamException;
+import org.apache.log4j.Logger;
 
 public class SiteInformationService {
+	
+	private static final Logger log = Logger.getLogger(SiteInformationService.class);
+	
 	public static final String SITE_ATTRIBUTE_TITLE = DownloadType.siteAttribute.getTitle();
 	public static final String SITE_ATTRIBUTE_OUT_FILENAME = SITE_ATTRIBUTE_TITLE.replaceAll(" ", "_");
 	
@@ -31,7 +36,7 @@ public class SiteInformationService {
 	private static final String SITE_LAYER_NAME = "NAR:JD_NFSN_sites0914";
 	
 	public void streamData(OutputStream output, 
-			final List<String> format,
+			final MimeType mimeType,
 			final List<String> siteType,
 			final List<String> stationId,
 			final List<String> state) throws IOException {
@@ -55,27 +60,7 @@ public class SiteInformationService {
 		
 		steps.add(connectorStep);
 		
-		FilterStageBuilder fsb = new FilterStageBuilder(connectorStep.getExpectedColumns());
-		ColumnGrouping fromConnectorStep = connectorStep.getExpectedColumns();
-		for (Column col : fromConnectorStep) {
-			if (!fromConnectorStep.getPrimaryKey().equals(col)) {
-				// TODO wrap in quotes to preserve leading 0
-//				final Column outCol = col;
-//				fsb.addTransform(col, new ColumnTransform() {
-//					@Override
-//					public String transform(TableRow row) {
-//						return "\"" + row.getValue(outCol) + ",\"";
-//					}
-//				});
-			}
-		}
-		
-		FilterStep wrapInQuotesFilterStep = new FilterStep(new NudeFilterBuilder(connectorStep.getExpectedColumns())
-				.addFilterStage(fsb.buildFilterStage())
-				.buildFilter());
-		
-		steps.add(wrapInQuotesFilterStep);
-		List<Column> wrapped = wrapInQuotesFilterStep.getExpectedColumns().getColumns();
+		List<Column> wrapped = connectorStep.getExpectedColumns().getColumns();
 		ColumnGrouping removed = new ColumnGrouping(wrapped.subList(1, wrapped.size()));
 		FilterStep removeFIDFilterStep = new FilterStep(new NudeFilterBuilder(removed)
 				.addFilterStage(new FilterStageBuilder(removed)
@@ -90,13 +75,14 @@ public class SiteInformationService {
 		TableResponse tr = new TableResponse(runStep);
 		StreamResponse sr = null;
 		try {
-			sr = Dispatcher.buildFormattedResponse(MimeType.CSV, tr);
+			sr = Dispatcher.buildFormattedResponse(mimeType, tr);
 		} catch (IOException| SQLException | XMLStreamException ex) {
-			ex.printStackTrace();
+			log.error("Unable to build formatted response", ex);
 		}
 		if (sr != null && output != null) {
-			// TODO modify dispatcher to slowly add header information to this outputstream
-			// output.write(DescriptionLoaderSingleton.getDescription(SITE_ATTRIBUTE_TITLE).getBytes());
+			if (mimeType == MimeType.CSV || mimeType == MimeType.TAB) {
+				output.write(DescriptionLoaderSingleton.getDescription(SITE_ATTRIBUTE_TITLE).getBytes());
+			}
 			StreamResponse.dispatch(sr, new PrintWriter(output));
 			output.flush();
 		}
