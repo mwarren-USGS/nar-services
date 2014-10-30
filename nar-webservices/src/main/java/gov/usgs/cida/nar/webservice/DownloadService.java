@@ -7,6 +7,7 @@ import static gov.usgs.cida.nar.service.DownloadServiceParameters.*;
 
 import gov.usgs.cida.nar.service.DownloadType;
 import gov.usgs.cida.nar.service.SiteInformationService;
+import gov.usgs.cida.nar.service.StreamflowService;
 import gov.usgs.cida.nar.util.DescriptionLoaderSingleton;
 import gov.usgs.cida.nar.util.ServiceParameterUtils;
 import gov.usgs.webservices.framework.basic.MimeType;
@@ -98,7 +99,7 @@ public class DownloadService {
 					}
 
 					if(ServiceParameterUtils.isAnnualFlowRequested(dataType, streamFlowType)) {
-						//TODO hook up
+						addFlowEntry(zip, mimeType, streamFlowType, siteType, stationId, state, startDateTime, endDateTime);
 					}
 
 					if(ServiceParameterUtils.isMonthlyFlowRequested(dataType, streamFlowType)) {
@@ -137,6 +138,21 @@ public class DownloadService {
 			final List<String> endDateTime) throws IOException {
 		zip.putNextEntry(new ZipEntry(DiscreteQwService.DISCRETE_QW_OUT_FILENAME + "." + mimeType.getFileSuffix()));
 		new DiscreteQwService().streamData(zip, mimeType, qwDataType, constituent, siteType, stationId, state, startDateTime, endDateTime);
+		zip.closeEntry();
+	}
+	
+	private void addFlowEntry(ZipOutputStream zip,
+			final MimeType mimeType,
+			final List<String> streamFlowType,
+			final List<String> siteType,
+			final List<String> stationId,
+			final List<String> state,
+			final List<String> startDateTime,
+			final List<String> endDateTime) throws IOException {
+		
+		StreamflowService streamflowService = new StreamflowService(DownloadType.annualFlow);
+		zip.putNextEntry(new ZipEntry(DownloadType.annualFlow.name() + "." + mimeType.getFileSuffix()));
+		streamflowService.streamData(zip, mimeType, siteType, stationId, state);
 		zip.closeEntry();
 	}
 	
