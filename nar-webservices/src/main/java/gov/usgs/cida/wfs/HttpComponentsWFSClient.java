@@ -1,6 +1,8 @@
 package gov.usgs.cida.wfs;
 
+import gov.usgs.cida.gml.EmptyFeatureCollectionException;
 import gov.usgs.cida.gml.GMLStreamingFeatureCollection;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -8,7 +10,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.util.UUID;
+
 import javax.xml.transform.TransformerException;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
@@ -22,6 +26,9 @@ import org.apache.http.protocol.HttpContext;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.filter.FilterTransformer;
 import org.opengis.filter.Filter;
+import org.slf4j.LoggerFactory;
+
+import ch.qos.logback.classic.Logger;
 
 /**
  * This implementation uses regular HTTP client to download wfs to temporary
@@ -29,6 +36,7 @@ import org.opengis.filter.Filter;
  * @author Jordan Walker <jiwalker@usgs.gov>
  */
 public class HttpComponentsWFSClient implements WFSClientInterface {
+	private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(HttpComponentsWFSClient.class);
     
     private String wfsEndpoint;
     private File tmpWfsFile;
@@ -90,7 +98,11 @@ public class HttpComponentsWFSClient implements WFSClientInterface {
             IOUtils.closeQuietly(is);
             IOUtils.closeQuietly(os);
         }
-        collection = new GMLStreamingFeatureCollection(tmpWfsFile);
+        try {
+			collection = new GMLStreamingFeatureCollection(tmpWfsFile);
+		} catch (EmptyFeatureCollectionException e) {
+			LOG.debug("no features returned", e);
+		}
         
         return collection;
     }

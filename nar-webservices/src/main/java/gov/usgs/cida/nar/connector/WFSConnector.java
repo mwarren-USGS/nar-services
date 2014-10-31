@@ -6,12 +6,16 @@ import gov.usgs.cida.nude.column.ColumnGrouping;
 import gov.usgs.cida.nude.column.SimpleColumn;
 import gov.usgs.cida.nude.connector.IConnector;
 import gov.usgs.cida.nude.connector.parser.IParser;
+import gov.usgs.cida.nude.resultset.inmemory.StringTableResultSet;
 import gov.usgs.cida.wfs.HttpComponentsWFSClient;
 import gov.usgs.cida.wfs.WFSClientInterface;
+
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.util.LinkedList;
 import java.util.List;
+
+import org.geotools.data.simple.SimpleFeatureCollection;
 import org.opengis.filter.Filter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +27,14 @@ import org.slf4j.LoggerFactory;
 public class WFSConnector implements IConnector {
 	
 	private static final Logger log = LoggerFactory.getLogger(WFSConnector.class);
+	
+	public static final String WFS_SITE_FID_COL_NAME = "FID";
+	public static final String WFS_SITE_ID_COL_NAME = "siteid";
+	public static final String WFS_STA_NAME_COL_NAME = "staname";
+	public static final String WFS_LAT_COL_NAME = "latitude";
+	public static final String WFS_LONG_COL_NAME = "longitude";
+	public static final String WFS_SITE_TYPE_COL_NAME = "sitetype";
+	public static final String WFS_STATE_COL_NAME = "state";
 	
 	private ColumnGrouping cg;
 	private WFSClientInterface client;
@@ -43,14 +55,14 @@ public class WFSConnector implements IConnector {
 	}
 	
 	private static ColumnGrouping makeColumnGrouping() {
-		Column primaryKey = new SimpleColumn("FID");
+		Column primaryKey = new SimpleColumn(WFS_SITE_FID_COL_NAME);
 		List<Column> allColumns = new LinkedList<>();
 		allColumns.add(primaryKey);
-		allColumns.add(new SimpleColumn("siteid"));
-		allColumns.add(new SimpleColumn("staname"));
-		allColumns.add(new SimpleColumn("latitude"));
-		allColumns.add(new SimpleColumn("longitude"));
-		allColumns.add(new SimpleColumn("sitetype"));
+		allColumns.add(new SimpleColumn(WFS_SITE_ID_COL_NAME));
+		allColumns.add(new SimpleColumn(WFS_STA_NAME_COL_NAME));
+		allColumns.add(new SimpleColumn(WFS_LAT_COL_NAME));
+		allColumns.add(new SimpleColumn(WFS_LONG_COL_NAME));
+		allColumns.add(new SimpleColumn(WFS_SITE_TYPE_COL_NAME));
 		return new ColumnGrouping(primaryKey, allColumns);
 	}
 
@@ -68,7 +80,12 @@ public class WFSConnector implements IConnector {
 	public ResultSet getResultSet() {
 		WFSResultSet wfsResultSet = null;
 		try {
-			wfsResultSet = new WFSResultSet(client.getFeatureCollection(this.typeName, this.filter), getExpectedColumns());
+			SimpleFeatureCollection features = client.getFeatureCollection(this.typeName, this.filter);
+			if(features != null) {
+				wfsResultSet = new WFSResultSet(features, getExpectedColumns());
+			} else {
+				return new StringTableResultSet(getExpectedColumns());
+			}
 		}
 		catch (IOException ex) {
 			log.error("Unable to get wfs result set from source", ex);

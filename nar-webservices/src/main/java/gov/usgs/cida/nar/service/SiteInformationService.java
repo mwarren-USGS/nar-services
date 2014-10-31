@@ -3,7 +3,6 @@ package gov.usgs.cida.nar.service;
 import gov.usgs.cida.nar.connector.WFSConnector;
 import gov.usgs.cida.nar.util.DescriptionLoaderSingleton;
 import gov.usgs.cida.nar.util.JNDISingleton;
-
 import gov.usgs.cida.nude.column.Column;
 import gov.usgs.cida.nude.column.ColumnGrouping;
 import gov.usgs.cida.nude.filter.FilterStageBuilder;
@@ -15,15 +14,23 @@ import gov.usgs.cida.nude.out.TableResponse;
 import gov.usgs.cida.nude.plan.Plan;
 import gov.usgs.cida.nude.plan.PlanStep;
 import gov.usgs.webservices.framework.basic.MimeType;
+
+import org.opengis.filter.Filter;
+import org.opengis.filter.FilterFactory2;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+
 import javax.xml.stream.XMLStreamException;
+
 import org.apache.log4j.Logger;
+import org.geotools.factory.CommonFactoryFinder;
 
 public class SiteInformationService {
 	
@@ -42,8 +49,9 @@ public class SiteInformationService {
 			final List<String> state) throws IOException {
 		
 		String wfsUrl = JNDISingleton.getInstance().getProperty(SITE_INFO_URL_JNDI_NAME);
-		// TODO build filter from parameter input
-		final WFSConnector wfsConnector = new WFSConnector(wfsUrl, SITE_LAYER_NAME, null);
+		
+		final WFSConnector wfsConnector = new WFSConnector(wfsUrl, SITE_LAYER_NAME, getFilter(siteType, stationId, state));
+		
 		List<PlanStep> steps = new LinkedList<>();
 		PlanStep connectorStep = new PlanStep() {
 
@@ -88,4 +96,42 @@ public class SiteInformationService {
 		}
 	}
 	
+	private static Filter getFilter(final List<String> siteType,
+			final List<String> stationId,
+			final List<String> state) {
+		FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2( null );
+		List<Filter> filters = new ArrayList<>();
+		
+		if(stationId != null && stationId.size() > 0) {
+			List<Filter> stationIdFilters = new ArrayList<>();
+			for(String sid : stationId) {
+				stationIdFilters.add(ff.equals(ff.property(WFSConnector.WFS_SITE_ID_COL_NAME), ff.literal(sid)));
+			}
+			filters.add(ff.or(stationIdFilters));
+		}
+		
+		if(state != null && state.size() > 0) {
+			List<Filter> stateFilters = new ArrayList<>();
+			for(String st : state) {
+				stateFilters.add(ff.equals(ff.property(WFSConnector.WFS_STATE_COL_NAME), ff.literal(st)));
+			}
+			filters.add(ff.or(stateFilters));
+		}
+		
+
+		if(siteType != null && siteType.size() > 0) {
+			//TODO ingore siteType == MRB and add MRB sites to station id filter
+			List<Filter> siteTypeFilters = new ArrayList<>();
+			for(String st : siteType) {
+				siteTypeFilters.add(ff.equals(ff.property(WFSConnector.WFS_SITE_TYPE_COL_NAME), ff.literal(st)));
+			}
+			filters.add(ff.or(siteTypeFilters));
+		}
+		
+		if(filters.size() > 0) {
+			return ff.and(filters);
+		} else {
+			return null;
+		}
+	}
 }

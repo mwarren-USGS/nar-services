@@ -48,7 +48,7 @@ public class GMLStreamingFeatureCollection implements SimpleFeatureCollection {
 	final private SimpleFeatureType featureType;
 	final private Configuration configuration;
 
-	public GMLStreamingFeatureCollection(File file) {
+	public GMLStreamingFeatureCollection(File file) throws EmptyFeatureCollectionException {
 
         LOGGER.debug("Starting parse of file {}", file.getName());
 		this.file = file;
@@ -58,7 +58,7 @@ public class GMLStreamingFeatureCollection implements SimpleFeatureCollection {
                 SimpleFeature feature = iterator.next();
                 this.featureType = feature.getFeatureType();
             } else {
-                throw new RuntimeException("Empty Feature Collection");
+                throw new EmptyFeatureCollectionException();
             }
         } catch (IOException | SAXException | ParserConfigurationException e) {
 			throw new RuntimeException(e);
