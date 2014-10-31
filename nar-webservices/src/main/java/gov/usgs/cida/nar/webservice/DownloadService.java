@@ -90,7 +90,7 @@ public class DownloadService {
 						//TODO hook up
 					}
 
-					if(ServiceParameterUtils.isMonthlyLoadsRequested(dataType, qwDataType)) {
+					if(ServiceParameterUtils.isMayLoadsRequested(dataType, qwDataType, siteType)) {
 						//TODO hook up
 					}
 
@@ -202,8 +202,8 @@ public class DownloadService {
 			appendDataTypeDescription(sb, DownloadType.annualLoad);
 		}
 
-		if(ServiceParameterUtils.isMonthlyLoadsRequested(dataType, qwDataType)) {
-			appendDataTypeDescription(sb, DownloadType.monthlyLoad);
+		if(ServiceParameterUtils.isMayLoadsRequested(dataType, qwDataType, siteType)) {
+			appendDataTypeDescription(sb, DownloadType.mayLoad);
 		}
 
 		if(ServiceParameterUtils.isDailyFlowRequested(dataType, streamFlowType)) {
