@@ -3,23 +3,9 @@ package gov.usgs.cida.nar.connector;
 import gov.usgs.cida.nude.column.ColumnGrouping;
 import gov.usgs.cida.nude.connector.IConnector;
 import gov.usgs.cida.nude.connector.parser.IParser;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.sql.ResultSet;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
-import java.util.logging.Level;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +65,7 @@ public class SOSConnector implements IConnector {
 
 	@Override
 	public IParser getParser() {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		return null;
 	}
 
 	@Override
