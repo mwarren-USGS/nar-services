@@ -69,7 +69,7 @@ public class ServiceParameterUtilsTest {
 	public void testIsMayLoadsRequested() {
 		assertFalse("May load not requested if params not provided", ServiceParameterUtils.isMayLoadsRequested(null, null, null));
 		
-		assertFalse("May Load not requested if water quality data type requested without any QW data type filters or with site types", 
+		assertTrue("May Load requested if water quality data type requested without any QW data type filters or without site types", 
 				ServiceParameterUtils.isMayLoadsRequested(Arrays.asList(new String[] { DataType.waterQuality.name() }), null, null));
 		
 		assertTrue("May Load requested if water quality data type requested without any QW data type filters but with site types containing MRB", 
@@ -79,14 +79,14 @@ public class ServiceParameterUtilsTest {
 						Arrays.asList(ServiceParameterUtils.MRB_SITE_TYPE)
 						));
 
-		assertFalse("Monthly Load NOT requested if water quality data type requested with a QW data type filters that do not include May Load", 
+		assertFalse("May Load NOT requested if water quality data type requested with a QW data type filters that do not include May Load", 
 				ServiceParameterUtils.isMayLoadsRequested(
 						Arrays.asList(new String[] { DataType.waterQuality.name() }), 
 						Arrays.asList(new String[] { DownloadType.annualLoad.name() }), 
 						Arrays.asList(ServiceParameterUtils.MRB_SITE_TYPE)
 						));
 
-		assertTrue("Monthly Load requested if water quality data type requested with a QW data type filters that include May Load", 
+		assertTrue("May Load requested if water quality data type requested with a QW data type filters that include May Load", 
 				ServiceParameterUtils.isMayLoadsRequested(
 						Arrays.asList(new String[] { DataType.waterQuality.name() }), 
 						Arrays.asList(new String[] { DownloadType.annualLoad.name(), DownloadType.mayLoad.name() }), 
@@ -102,24 +102,10 @@ public class ServiceParameterUtilsTest {
 				ServiceParameterUtils.isAnnualFlowRequested(Arrays.asList(new String[] { DataType.streamFlow.name() }), null));
 
 		assertFalse("Annual Flow NOT requested if stream flow data type requested with a stream flow type filters that do not include Annual Flow", 
-				ServiceParameterUtils.isAnnualFlowRequested(Arrays.asList(new String[] { DataType.streamFlow.name() }), Arrays.asList(new String[] { DownloadType.monthlyFlow.name() })));
+				ServiceParameterUtils.isAnnualFlowRequested(Arrays.asList(new String[] { DataType.streamFlow.name() }), Arrays.asList(new String[] { DownloadType.dailyFlow.name() })));
 		
 		assertTrue("Annual Flow requested if stream flow data type requested with a stream flow filters that include Annual Flow", 
-				ServiceParameterUtils.isAnnualFlowRequested(Arrays.asList(new String[] { DataType.streamFlow.name() }), Arrays.asList(new String[] { DownloadType.annualFlow.name(), DownloadType.monthlyFlow.name() })));
-	}
-
-	@Test
-	public void testIsMonthlyFlowRequested() {
-		assertFalse("Monthly Flow not requested if params not provided", ServiceParameterUtils.isMonthlyFlowRequested(null, null));
-		
-		assertTrue("Monthly Flow requested if stream flow data type requested without any stream flow type filters", 
-				ServiceParameterUtils.isMonthlyFlowRequested(Arrays.asList(new String[] { DataType.streamFlow.name() }), null));
-
-		assertFalse("Monthly Flow NOT requested if stream flow data type requested with a stream flow type filters that do not include Monthly Flow", 
-				ServiceParameterUtils.isMonthlyFlowRequested(Arrays.asList(new String[] { DataType.streamFlow.name() }), Arrays.asList(new String[] { DownloadType.annualFlow.name() })));
-
-		assertTrue("Monthly Flow requested if stream flow data type requested with a stream flow filters that include Monthly Flow", 
-				ServiceParameterUtils.isMonthlyFlowRequested(Arrays.asList(new String[] { DataType.streamFlow.name() }), Arrays.asList(new String[] { DownloadType.annualFlow.name(), DownloadType.monthlyFlow.name() })));
+				ServiceParameterUtils.isAnnualFlowRequested(Arrays.asList(new String[] { DataType.streamFlow.name() }), Arrays.asList(new String[] { DownloadType.annualFlow.name(), DownloadType.dailyFlow.name() })));
 	}
 
 	@Test
