@@ -59,24 +59,39 @@ public class ServiceParameterUtilsTest {
 				ServiceParameterUtils.isAnnualLoadsRequested(Arrays.asList(new String[] { DataType.waterQuality.name() }), null));
 
 		assertFalse("Annual Load NOT requested if water quality data type requested with a QW data type filters that do not include Annual Load", 
-				ServiceParameterUtils.isAnnualLoadsRequested(Arrays.asList(new String[] { DataType.waterQuality.name() }), Arrays.asList(new String[] { DownloadType.monthlyLoad.name() })));
+				ServiceParameterUtils.isAnnualLoadsRequested(Arrays.asList(new String[] { DataType.waterQuality.name() }), Arrays.asList(new String[] { DownloadType.mayLoad.name() })));
 
 		assertTrue("Annual Load requested if water quality data type requested with a QW data type filters that include Annual Load", 
 				ServiceParameterUtils.isAnnualLoadsRequested(Arrays.asList(new String[] { DataType.waterQuality.name() }), Arrays.asList(new String[] { DownloadType.annualLoad.name(), DownloadType.discreteQw.name() })));
 	}
 	
 	@Test
-	public void testIsMonthlyLoadsRequested() {
-		assertFalse("Monthly not requested if params not provided", ServiceParameterUtils.isMonthlyLoadsRequested(null, null));
+	public void testIsMayLoadsRequested() {
+		assertFalse("May load not requested if params not provided", ServiceParameterUtils.isMayLoadsRequested(null, null, null));
 		
-		assertTrue("Monthly Load requested if water quality data type requested without any QW data type filters", 
-				ServiceParameterUtils.isMonthlyLoadsRequested(Arrays.asList(new String[] { DataType.waterQuality.name() }), null));
+		assertFalse("May Load not requested if water quality data type requested without any QW data type filters or with site types", 
+				ServiceParameterUtils.isMayLoadsRequested(Arrays.asList(new String[] { DataType.waterQuality.name() }), null, null));
+		
+		assertTrue("May Load requested if water quality data type requested without any QW data type filters but with site types containing MRB", 
+				ServiceParameterUtils.isMayLoadsRequested(
+						Arrays.asList(new String[] { DataType.waterQuality.name() }), 
+						null, 
+						Arrays.asList(ServiceParameterUtils.MRB_SITE_TYPE)
+						));
 
-		assertFalse("Monthly Load NOT requested if water quality data type requested with a QW data type filters that do not include Monthly Load", 
-				ServiceParameterUtils.isMonthlyLoadsRequested(Arrays.asList(new String[] { DataType.waterQuality.name() }), Arrays.asList(new String[] { DownloadType.annualLoad.name() })));
+		assertFalse("Monthly Load NOT requested if water quality data type requested with a QW data type filters that do not include May Load", 
+				ServiceParameterUtils.isMayLoadsRequested(
+						Arrays.asList(new String[] { DataType.waterQuality.name() }), 
+						Arrays.asList(new String[] { DownloadType.annualLoad.name() }), 
+						Arrays.asList(ServiceParameterUtils.MRB_SITE_TYPE)
+						));
 
-		assertTrue("Monthly Load requested if water quality data type requested with a QW data type filters that include Monthly Load", 
-				ServiceParameterUtils.isMonthlyLoadsRequested(Arrays.asList(new String[] { DataType.waterQuality.name() }), Arrays.asList(new String[] { DownloadType.monthlyLoad.name(), DownloadType.discreteQw.name() })));
+		assertTrue("Monthly Load requested if water quality data type requested with a QW data type filters that include May Load", 
+				ServiceParameterUtils.isMayLoadsRequested(
+						Arrays.asList(new String[] { DataType.waterQuality.name() }), 
+						Arrays.asList(new String[] { DownloadType.annualLoad.name(), DownloadType.mayLoad.name() }), 
+						Arrays.asList(ServiceParameterUtils.MRB_SITE_TYPE)
+						));
 	}
 
 	@Test

@@ -1,7 +1,0 @@
-# This automated data download from the USGS Tracking Water Quality over Time website have not received director's approval and as such are provisional and are subject to revision. The data are released on the conditions that neither the USGS nor the United States Government may be held liable for any damages resulting from its use.
-#
-#SITE_QW_ID USGS Station Identifier for water-quality sampling
-#SITE_FLOW_ID USGS Station Identifier for streamflow measurement
-#WY Water year
-#MONTH Numeric month
-#FLOW Flow volume, in acre-feet

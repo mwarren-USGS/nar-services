@@ -6,6 +6,7 @@ import gov.usgs.cida.nar.service.DownloadType;
 import java.util.List;
 
 public class ServiceParameterUtils {
+	public static String MRB_SITE_TYPE = "MRB";
 	public static String CSV_DELIMITER = ",";
 	public static String TSV_DELIMITER = "\t";
 	
@@ -34,8 +35,8 @@ public class ServiceParameterUtils {
 		return isQwParamRequested(inDataTypes, inQwDataTypes, DownloadType.annualLoad);
 	}
 	
-	public static boolean isMonthlyLoadsRequested(final List<String> inDataTypes, final List<String> inQwDataTypes) {
-		return isQwParamRequested(inDataTypes, inQwDataTypes, DownloadType.monthlyLoad);
+	public static boolean isMayLoadsRequested(final List<String> inDataTypes, final List<String> inQwDataTypes, final List<String> siteTypes) {
+		return siteTypes != null && siteTypes.contains(MRB_SITE_TYPE) && isQwParamRequested(inDataTypes, inQwDataTypes, DownloadType.mayLoad);
 	}
 	
 	private static boolean isQwParamRequested(final List<String> dataTypes, final List<String> qwDataTypes, DownloadType qwParamType) {
