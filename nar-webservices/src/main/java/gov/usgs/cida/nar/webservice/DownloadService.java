@@ -99,7 +99,7 @@ public class DownloadService {
 					}
 
 					if(ServiceParameterUtils.isAnnualFlowRequested(dataType, streamFlowType)) {
-						addFlowEntry(zip, mimeType, streamFlowType, siteType, stationId, state, startDateTime, endDateTime);
+//						addFlowEntry(zip, mimeType, streamFlowType, siteType, stationId, state, startDateTime, endDateTime);
 					}
 
 					if(ServiceParameterUtils.isMonthlyFlowRequested(dataType, streamFlowType)) {
