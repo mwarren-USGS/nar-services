@@ -7,14 +7,16 @@ import static gov.usgs.cida.nar.service.DownloadServiceParameters.*;
 
 import gov.usgs.cida.nar.service.DownloadType;
 import gov.usgs.cida.nar.service.SiteInformationService;
+import gov.usgs.cida.nar.service.StreamflowService;
 import gov.usgs.cida.nar.util.DescriptionLoaderSingleton;
 import gov.usgs.cida.nar.util.ServiceParameterUtils;
+import gov.usgs.webservices.framework.basic.MimeType;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -24,7 +26,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 import org.apache.commons.io.IOUtils;
@@ -40,7 +41,7 @@ public class DownloadService {
 	@Path("/bundle/zip")
 	@Produces("application/zip")
 	public Response downloadZippedBundle(
-			@QueryParam(FORMAT_PARAM) final List<String> format,
+			@QueryParam(MIME_TYPE_PARAM) final String mimeTypeParam,
 			@QueryParam(DATA_TYPE_PARAM) final List<String> dataType,
 			@QueryParam(QW_DATA_TYPE_PARAM) final List<String> qwDataType,
 			@QueryParam(STREAM_FLOW_TYPE_PARAM) final List<String> streamFlowType,
@@ -51,6 +52,11 @@ public class DownloadService {
 			@QueryParam(START_DATE_PARAM) final List<String> startDateTime,
 			@QueryParam(END_DATE_PARAM) final List<String> endDateTime) throws NamingException {
 		LOG.debug("Stream full zipped bundle started");
+		
+		final MimeType mimeType = MimeType.lookup(mimeTypeParam);
+		if (mimeType == null) {
+			throw new RuntimeException("mimeType not supported");
+		}
 
 		return Response.ok(new StreamingOutput() {
 			@Override
@@ -58,7 +64,7 @@ public class DownloadService {
 				ZipOutputStream zip = null;
 				try {
 					zip = new ZipOutputStream(output, StandardCharsets.UTF_8);
-					addRequestSummaryEntry(zip, buildRequestDescriptionFromParams(format,
+					addRequestSummaryEntry(zip, buildRequestDescriptionFromParams(mimeType,
 							dataType,
 							qwDataType,
 							streamFlowType,
@@ -70,7 +76,7 @@ public class DownloadService {
 							endDateTime));
 					
 					if(ServiceParameterUtils.isSiteInformationRequested(dataType)) {
-						addSiteInformationEntry(zip, format,
+						addSiteInformationEntry(zip, mimeType,
 								siteType,
 								stationId,
 								state);
@@ -93,7 +99,7 @@ public class DownloadService {
 					}
 
 					if(ServiceParameterUtils.isAnnualFlowRequested(dataType, streamFlowType)) {
-						//TODO hook up
+						addFlowEntry(zip, mimeType, streamFlowType, siteType, stationId, state, startDateTime, endDateTime);
 					}
 
 					if(ServiceParameterUtils.isMonthlyFlowRequested(dataType, streamFlowType)) {
@@ -106,35 +112,15 @@ public class DownloadService {
 		}).header("Content-Disposition", "attachment; filename=\"data.zip\"").build();
 	}
 
-	@GET
-	@Path("/siteAttributes")
-	@Produces(MediaType.TEXT_PLAIN)
-	public StreamingOutput downloadSiteInformation(
-			@QueryParam(FORMAT_PARAM) final List<String> format,
-			@QueryParam(SITE_TYPE_PARAM) final List<String> siteType,
-			@QueryParam(STATION_ID_PARAM) final List<String> stationId,
-			@QueryParam(STATE_PARAM) final List<String> state) throws NamingException {
-		LOG.debug("Streaming siteInfo/plain started");
-		return new StreamingOutput() {
-			@Override
-			public void write(OutputStream output) throws IOException, WebApplicationException {
-				new SiteInformationService().streamData(output, format,
-						siteType,
-						stationId,
-						state);
-			}
-		};
-	}
-
 	private void addSiteInformationEntry(ZipOutputStream zip, 
-			final List<String> format,
+			final MimeType mimeType,
 			final List<String> siteType,
 			final List<String> stationId,
 			final List<String> state
 			) throws IOException {
-		zip.putNextEntry(new ZipEntry(SiteInformationService.SITE_ATTRIBUTE_OUT_FILENAME + ".csv"));
+		zip.putNextEntry(new ZipEntry(SiteInformationService.SITE_ATTRIBUTE_OUT_FILENAME + "." + mimeType.getFileSuffix()));
 		new SiteInformationService().streamData(zip, 
-				format,
+				mimeType,
 				siteType,
 				stationId,
 				state);
@@ -142,7 +128,7 @@ public class DownloadService {
 	}
 	
 	private void addDiscreteQwEntry(ZipOutputStream zip,
-			final List<String> format,
+			final MimeType mimeType,
 			final List<String> qwDataType,
 			final List<String> constituent,
 			final List<String> siteType,
@@ -150,8 +136,23 @@ public class DownloadService {
 			final List<String> state,
 			final List<String> startDateTime,
 			final List<String> endDateTime) throws IOException {
-		zip.putNextEntry(new ZipEntry(DiscreteQwService.DISCRETE_QW_OUT_FILENAME + ".csv"));
-		new DiscreteQwService().streamData(zip, format, qwDataType, constituent, siteType, stationId, state, startDateTime, endDateTime);
+		zip.putNextEntry(new ZipEntry(DiscreteQwService.DISCRETE_QW_OUT_FILENAME + "." + mimeType.getFileSuffix()));
+		new DiscreteQwService().streamData(zip, mimeType, qwDataType, constituent, siteType, stationId, state, startDateTime, endDateTime);
+		zip.closeEntry();
+	}
+	
+	private void addFlowEntry(ZipOutputStream zip,
+			final MimeType mimeType,
+			final List<String> streamFlowType,
+			final List<String> siteType,
+			final List<String> stationId,
+			final List<String> state,
+			final List<String> startDateTime,
+			final List<String> endDateTime) throws IOException {
+		
+		StreamflowService streamflowService = new StreamflowService(DownloadType.annualFlow);
+		zip.putNextEntry(new ZipEntry(DownloadType.annualFlow.name() + "." + mimeType.getFileSuffix()));
+		streamflowService.streamData(zip, mimeType, siteType, stationId, state);
 		zip.closeEntry();
 	}
 	
@@ -162,7 +163,7 @@ public class DownloadService {
 	}
 	
 	private String buildRequestDescriptionFromParams(
-			final List<String> format,
+			final MimeType mimeType,
 			final List<String> dataType,
 			final List<String> qwDataType,
 			final List<String> streamFlowType,
@@ -176,7 +177,7 @@ public class DownloadService {
 		
 		//List service criteria
 		sb.append("Request criteria provided\n");
-		prettyPrintParamList(sb, format, DownloadServiceParameters.FORMAT_PARAM);
+		prettyPrintParamList(sb, Arrays.asList(mimeType.name()), DownloadServiceParameters.MIME_TYPE_PARAM);
 		prettyPrintParamList(sb, dataType, DownloadServiceParameters.DATA_TYPE_PARAM);
 		prettyPrintParamList(sb, qwDataType, DownloadServiceParameters.QW_DATA_TYPE_PARAM);
 		prettyPrintParamList(sb, streamFlowType, DownloadServiceParameters.STREAM_FLOW_TYPE_PARAM);

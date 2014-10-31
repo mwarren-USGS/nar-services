@@ -3,6 +3,7 @@ package gov.usgs.cida.nar.service;
 import gov.usgs.cida.nar.transform.NarSosTimeSeriesToDelimitedText;
 import gov.usgs.cida.nar.util.JNDISingleton;
 import gov.usgs.cida.nar.util.ServiceParameterUtils;
+import gov.usgs.webservices.framework.basic.MimeType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -13,6 +14,8 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
+import static java.lang.String.format;
 
 /**
  *
@@ -26,7 +29,7 @@ public class DiscreteQwService {
 	private static final String DISCRETE_QW_URL_JNDI_NAME = "nar.endpoint.sos";
 
 	public void streamData(OutputStream output,
-			final List<String> format,
+			final MimeType mimeType,
 			final List<String> qwDataType,
 			final List<String> constituent,
 			final List<String> siteType,
@@ -41,7 +44,7 @@ public class DiscreteQwService {
 				.request(new MediaType[] {MediaType.APPLICATION_JSON_TYPE})
 				.post(buildDiscreteQwPost(null));
 		try (InputStream returnStream = response.readEntity(InputStream.class)) {
-			new NarSosTimeSeriesToDelimitedText(ServiceParameterUtils.getDelimiterFromFormat(format)).transform(new InputStream[] { returnStream }, output);
+			//new NarSosTimeSeriesToDelimitedText(mimeType).transform(new InputStream[] { returnStream }, output);
 		}
 	}
 	

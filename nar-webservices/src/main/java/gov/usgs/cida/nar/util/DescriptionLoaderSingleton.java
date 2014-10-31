@@ -28,7 +28,7 @@ public class DescriptionLoaderSingleton {
 		String filename = name.replaceAll(" ",  "_") + ".txt";
 		try {
 			String description = IOUtils.toString(DescriptionLoaderSingleton.class.getResourceAsStream("descriptions/" + filename));
-			descriptionCache.put(name, description);
+			descriptionCache.put(name, description + "\r\n");
 		} catch (IOException e) {
 			LOG.info("Error attempting to read file: " + filename);
 		}

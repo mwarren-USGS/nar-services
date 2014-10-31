@@ -1,7 +1,7 @@
 package gov.usgs.cida.nar.service;
 
 public enum DownloadServiceParameters {
-	format("Format"),
+	mimeType("Format"),
 	dataType("Data type"),
 	qwDataType("Water Quality Data type"),
 	streamFlowType("Stream Flow Time Series"),
@@ -14,7 +14,7 @@ public enum DownloadServiceParameters {
 	;
 	
 	//String constants so we can use them in annotations, SHOULD MATCH ENUM NAME above
-	public static final String FORMAT_PARAM = "format";
+	public static final String MIME_TYPE_PARAM = "mimeType";
 	public static final String DATA_TYPE_PARAM = "dataType";
 	public static final String QW_DATA_TYPE_PARAM = "qwDataType";
 	public static final String STREAM_FLOW_TYPE_PARAM = "streamFlowType";
