@@ -13,6 +13,7 @@ import gov.usgs.webservices.framework.basic.MimeType;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -24,6 +25,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
@@ -40,6 +42,7 @@ public class DownloadService {
 	private static final List<String> CONSTITUENT_LIST = Arrays.asList(
 			"NH3", "NO23", "OP", "SI", "SSC", "TN", "TP"
 			);
+	private static final String FLOW_CONSTITUENT = "Q";
 	
 	@GET
 	@Path("/bundle/zip")
@@ -77,7 +80,7 @@ public class DownloadService {
 			public void write(OutputStream output) throws IOException, WebApplicationException {
 				ZipOutputStream zip = null;
 				try {
-					zip = new ZipOutputStream(output, StandardCharsets.UTF_8);
+					zip = new ZipOutputStream(output);
 					addRequestSummaryEntry(zip, buildRequestDescriptionFromParams(mimeType,
 							dataType,
 							qwDataType,
@@ -88,7 +91,7 @@ public class DownloadService {
 							state,
 							startDateTime,
 							endDateTime));
-					
+
 					if(ServiceParameterUtils.isSiteInformationRequested(dataType)) {
 						addSiteInformationEntry(zip, mimeType,
 								siteType,
@@ -175,7 +178,8 @@ public class DownloadService {
 						IOUtils.closeQuietly(zip);
 				}
 			}
-		}).header("Content-Disposition", "attachment; filename=\"data.zip\"").build();
+		}).header("Content-Disposition", "attachment; filename=\"data.zip\"")
+		.type(MediaType.APPLICATION_OCTET_STREAM_TYPE).build();
 	}
 
 	private void addSiteInformationEntry(ZipOutputStream zip, 
@@ -190,6 +194,7 @@ public class DownloadService {
 				siteType,
 				stationId,
 				state);
+		zip.flush();
 		zip.closeEntry();
 	}
 	
@@ -206,6 +211,15 @@ public class DownloadService {
 			final String startDateTime,
 			final String endDateTime) throws IOException {
 		zip.putNextEntry(new ZipEntry(downloadType.name() + "." + mimeType.getFileSuffix()));
+		
+		//if the download type is for flow, do not include requested constituents
+		List<String> constituentsToUse = new ArrayList<>();
+		if(downloadType.equals(DownloadType.annualFlow) || downloadType.equals(DownloadType.dailyFlow)) {
+			constituentsToUse.add(FLOW_CONSTITUENT);
+		} else {
+			constituentsToUse.addAll(constituent);
+		}
+		
 		new SosAggregationService(
 				downloadType, 
 				JNDISingleton.getInstance().getProperty(SOS_URL_JNDI_NAME),
@@ -215,18 +229,20 @@ public class DownloadService {
 					dataType,
 					qwDataType,
 					streamFlowType,
-					constituent,
+					constituentsToUse,
 					siteType,
 					stationId,
 					state,
 					startDateTime,
 					endDateTime);
+		zip.flush();
 		zip.closeEntry();
 	}
 
 	private void addRequestSummaryEntry(ZipOutputStream zip, String requestDescription) throws IOException {
 		zip.putNextEntry(new ZipEntry("request.txt"));
 		zip.write(requestDescription.getBytes());
+		zip.flush();
 		zip.closeEntry();
 	}
 	

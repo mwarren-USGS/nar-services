@@ -113,13 +113,17 @@ public class SOSClient extends Thread implements AutoCloseable {
 		builder.append("<sos:temporalFilter>")
 				.append("<fes:During>")
 				.append("<fes:ValueReference>phenomenonTime</fes:ValueReference>")
-				.append("<gml:TimePeriod gml:id=\"tp_1\">")
+				.append("<gml:TimePeriod gml:id=\"tp_1\">");
 				
-				// TODO Add times here from parameters
-				.append("<gml:beginPosition>" + startTime.toString() + "</gml:beginPosition>")
-				.append("<gml:endPosition>" + endTime.toString() + "</gml:endPosition>")
+
+		if(startTime != null) {
+			builder.append("<gml:beginPosition>" + startTime.toString() + "</gml:beginPosition>");
+		}
+		if(endTime != null){
+			builder.append("<gml:endPosition>" + endTime.toString() + "</gml:endPosition>");
+		}
 				
-				.append("</gml:TimePeriod>")
+		builder.append("</gml:TimePeriod>")
 				.append("</fes:During>")
 				.append("</sos:temporalFilter>");
 

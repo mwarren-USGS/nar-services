@@ -123,20 +123,30 @@ public class SosAggregationService {
 			final String startDateTime,
 			final String endDateTime) {
 		List<SOSConnector> sosConnectors = new ArrayList<>();
-		//Use the constituent list as the observed properties unless the enum has a list
-		List<String> inferredProperties = this.type.getObservedProperties();
+		
 		List<String> actualProperties = new ArrayList<>();
-		for(String prop : inferredProperties) {
-			actualProperties.add(this.observedPropertyPrefix + prop);
-		}
 		for(String prop : constituent) {
 			actualProperties.add(this.observedPropertyPrefix + prop);
 		}
 		
+		DateTime start = null;
+		try {
+			start = new DateTime(startDateTime);
+		} catch(Exception e) {
+			log.debug(e);
+		}
+		DateTime end = null;
+		try {
+			end = new DateTime(endDateTime);
+		} catch(Exception e) {
+			log.debug(e);
+		}
+		
+		
 		for(String procedure : this.type.getProcedures()) {
 			final SOSConnector sosConnector = new SOSConnector(sosUrl, 
-					new DateTime(startDateTime), 
-					new DateTime(endDateTime), 
+					start, 
+					end, 
 					actualProperties, 
 					Arrays.asList(procedure),
 					stationId);
