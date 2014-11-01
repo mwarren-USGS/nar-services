@@ -49,8 +49,8 @@ public class SosAggregationService {
 			final List<String> siteType,
 			final List<String> stationId,
 			final List<String> state,
-			final List<String> startDateTime,
-			final List<String> endDateTime) throws IOException {
+			final String startDateTime,
+			final String endDateTime) throws IOException {
 		
 		final List<SOSConnector> sosConnectors = getSosConnectors(
 				sosUrl,
@@ -120,23 +120,24 @@ public class SosAggregationService {
 			final List<String> siteType,
 			final List<String> stationId,
 			final List<String> state,
-			final List<String> startDateTime,
-			final List<String> endDateTime) {
+			final String startDateTime,
+			final String endDateTime) {
 		List<SOSConnector> sosConnectors = new ArrayList<>();
 		//Use the constituent list as the observed properties unless the enum has a list
-		List<String> observedProperties = this.type.getObservedProperties();
-		if(observedProperties == null) {
-			observedProperties = new ArrayList<>();
-			for(String prop : constituent) {
-				observedProperties.add(this.observedPropertyPrefix + prop);
-			}
+		List<String> inferredProperties = this.type.getObservedProperties();
+		List<String> actualProperties = new ArrayList<>();
+		for(String prop : inferredProperties) {
+			actualProperties.add(this.observedPropertyPrefix + prop);
+		}
+		for(String prop : constituent) {
+			actualProperties.add(this.observedPropertyPrefix + prop);
 		}
 		
 		for(String procedure : this.type.getProcedures()) {
 			final SOSConnector sosConnector = new SOSConnector(sosUrl, 
-					null, 
-					null, 
-					observedProperties, 
+					new DateTime(startDateTime), 
+					new DateTime(endDateTime), 
+					actualProperties, 
 					Arrays.asList(procedure),
 					stationId);
 			sosConnectors.add(sosConnector);
