@@ -1,13 +1,12 @@
 package gov.usgs.cida.nar.webservice;
 
-import gov.usgs.cida.nar.service.DiscreteQwService;
 import gov.usgs.cida.nar.service.DownloadServiceParameters;
 
 import static gov.usgs.cida.nar.service.DownloadServiceParameters.*;
 
 import gov.usgs.cida.nar.service.DownloadType;
 import gov.usgs.cida.nar.service.SiteInformationService;
-import gov.usgs.cida.nar.service.StreamflowService;
+import gov.usgs.cida.nar.service.SosAggregationService;
 import gov.usgs.cida.nar.util.DescriptionLoaderSingleton;
 import gov.usgs.cida.nar.util.ServiceParameterUtils;
 import gov.usgs.webservices.framework.basic.MimeType;
@@ -53,6 +52,8 @@ public class DownloadService {
 			@QueryParam(END_DATE_PARAM) final List<String> endDateTime) throws NamingException {
 		LOG.debug("Stream full zipped bundle started");
 		
+		//TODO fix up siteType and stationId lists based on the presence/absence of MRB sites/types
+		
 		final MimeType mimeType = MimeType.lookup(mimeTypeParam);
 		if (mimeType == null) {
 			throw new RuntimeException("mimeType not supported");
@@ -83,28 +84,80 @@ public class DownloadService {
 					}
 					
 					if(ServiceParameterUtils.isDiscreteQwRequested(dataType, qwDataType)) {
-						//TODO hook up
+						addAggregatedSosEntry(zip, 
+								DownloadType.discreteQw,
+								mimeType,
+								dataType,
+								qwDataType,
+								streamFlowType,
+								constituent,
+								siteType,
+								stationId,
+								state,
+								startDateTime,
+								endDateTime);
 					}
 
 					if(ServiceParameterUtils.isAnnualLoadsRequested(dataType, qwDataType)) {
-						//TODO hook up
+						addAggregatedSosEntry(zip, 
+								DownloadType.annualLoad,
+								mimeType,
+								dataType,
+								qwDataType,
+								streamFlowType,
+								constituent,
+								siteType,
+								stationId,
+								state,
+								startDateTime,
+								endDateTime);
 					}
 
 					if(ServiceParameterUtils.isMayLoadsRequested(dataType, qwDataType, siteType)) {
-						//TODO hook up
+						addAggregatedSosEntry(zip, 
+								DownloadType.mayLoad,
+								mimeType,
+								dataType,
+								qwDataType,
+								streamFlowType,
+								constituent,
+								siteType,
+								stationId,
+								state,
+								startDateTime,
+								endDateTime);
 					}
 
 					if(ServiceParameterUtils.isDailyFlowRequested(dataType, streamFlowType)) {
-						//TODO hook up
+						addAggregatedSosEntry(zip, 
+								DownloadType.dailyFlow,
+								mimeType,
+								dataType,
+								qwDataType,
+								streamFlowType,
+								constituent,
+								siteType,
+								stationId,
+								state,
+								startDateTime,
+								endDateTime);
 					}
 
 					if(ServiceParameterUtils.isAnnualFlowRequested(dataType, streamFlowType)) {
-//						addFlowEntry(zip, mimeType, streamFlowType, siteType, stationId, state, startDateTime, endDateTime);
+						addAggregatedSosEntry(zip, 
+							DownloadType.annualFlow,
+							mimeType,
+							dataType,
+							qwDataType,
+							streamFlowType,
+							constituent,
+							siteType,
+							stationId,
+							state,
+							startDateTime,
+							endDateTime);
 					}
 
-					if(ServiceParameterUtils.isMonthlyFlowRequested(dataType, streamFlowType)) {
-						//TODO hook up
-					}
 				} finally {
 						IOUtils.closeQuietly(zip);
 				}
@@ -127,35 +180,33 @@ public class DownloadService {
 		zip.closeEntry();
 	}
 	
-	private void addDiscreteQwEntry(ZipOutputStream zip,
+	private void addAggregatedSosEntry(ZipOutputStream zip,
+			final DownloadType downloadType,
 			final MimeType mimeType,
+			final List<String> dataType,
 			final List<String> qwDataType,
+			final List<String> streamFlowType,
 			final List<String> constituent,
 			final List<String> siteType,
 			final List<String> stationId,
 			final List<String> state,
 			final List<String> startDateTime,
 			final List<String> endDateTime) throws IOException {
-		zip.putNextEntry(new ZipEntry(DiscreteQwService.DISCRETE_QW_OUT_FILENAME + "." + mimeType.getFileSuffix()));
-		new DiscreteQwService().streamData(zip, mimeType, qwDataType, constituent, siteType, stationId, state, startDateTime, endDateTime);
+		zip.putNextEntry(new ZipEntry(downloadType.name() + "." + mimeType.getFileSuffix()));
+		new SosAggregationService(downloadType).streamData(zip, 
+				mimeType,
+				dataType,
+				qwDataType,
+				streamFlowType,
+				constituent,
+				siteType,
+				stationId,
+				state,
+				startDateTime,
+				endDateTime);
 		zip.closeEntry();
 	}
-	
-	private void addFlowEntry(ZipOutputStream zip,
-			final MimeType mimeType,
-			final List<String> streamFlowType,
-			final List<String> siteType,
-			final List<String> stationId,
-			final List<String> state,
-			final List<String> startDateTime,
-			final List<String> endDateTime) throws IOException {
-		
-		StreamflowService streamflowService = new StreamflowService(DownloadType.annualFlow);
-		zip.putNextEntry(new ZipEntry(DownloadType.annualFlow.name() + "." + mimeType.getFileSuffix()));
-		streamflowService.streamData(zip, mimeType, siteType, stationId, state);
-		zip.closeEntry();
-	}
-	
+
 	private void addRequestSummaryEntry(ZipOutputStream zip, String requestDescription) throws IOException {
 		zip.putNextEntry(new ZipEntry("request.txt"));
 		zip.write(requestDescription.getBytes());
@@ -212,10 +263,6 @@ public class DownloadService {
 
 		if(ServiceParameterUtils.isAnnualFlowRequested(dataType, streamFlowType)) {
 			appendDataTypeDescription(sb, DownloadType.annualFlow);
-		}
-
-		if(ServiceParameterUtils.isMonthlyFlowRequested(dataType, streamFlowType)) {
-			appendDataTypeDescription(sb, DownloadType.monthlyFlow);
 		}
 		
 		return sb.toString();
