@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.commons.io.IOUtils;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.opengis.feature.simple.SimpleFeature;
@@ -17,19 +18,22 @@ import org.opengis.feature.simple.SimpleFeature;
  *
  * @author Jordan Walker <jiwalker@usgs.gov>
  */
-public class WFSResultSet extends PeekingResultSet {
+public class WFSResultSet extends OGCResultSet {
 	
 	public static final String FID_NAME = "FID";
 	
+	private SimpleFeatureCollection features;
 	private SimpleFeatureIterator it;
 
 	public WFSResultSet(SimpleFeatureCollection features, ColumnGrouping colGroups) {
+		this.features = features;
 		this.it = features.features();
 		this.columns = colGroups;
 	}
 
 	@Override
-	protected void addNextRow() throws SQLException {
+	protected TableRow makeNextRow() {
+		TableRow nextRow = null;
 		if (this.it.hasNext()) {
 			SimpleFeature next = this.it.next();
 			Map<Column, String> feature = new HashMap<>();
@@ -43,14 +47,15 @@ public class WFSResultSet extends PeekingResultSet {
 				feature.put(col, attribute);
 			}
 			
-			TableRow nextRow = new TableRow(columns, feature);
-			this.nextRows.add(nextRow);
+			nextRow = new TableRow(columns, feature);
 		}
+		return nextRow;
 	}
 
 	@Override
-	public String getCursorName() throws SQLException {
-		return "YouBetterCatchThisInTheReviewEvenThoughItDoesntMatter";
+	public void close() throws SQLException {
+		IOUtils.closeQuietly(this.it);
+		super.close();
 	}
 
 	private static Pattern fidPattern = Pattern.compile(".*\\.(\\d+)");
@@ -62,4 +67,5 @@ public class WFSResultSet extends PeekingResultSet {
 		}
 		return result;
 	}
+
 }

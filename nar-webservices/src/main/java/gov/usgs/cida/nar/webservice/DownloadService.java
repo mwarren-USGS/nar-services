@@ -53,8 +53,8 @@ public class DownloadService {
 			@QueryParam(SITE_TYPE_PARAM) final List<String> siteType,
 			@QueryParam(STATION_ID_PARAM) final List<String> stationId,
 			@QueryParam(STATE_PARAM) final List<String> state,
-			@QueryParam(START_DATE_PARAM) final List<String> startDateTime,
-			@QueryParam(END_DATE_PARAM) final List<String> endDateTime) throws NamingException {
+			@QueryParam(START_DATE_PARAM) final String startDateTime,
+			@QueryParam(END_DATE_PARAM) final String endDateTime) throws NamingException {
 		LOG.debug("Stream full zipped bundle started");
 		
 		//default to "All constituents"
@@ -203,8 +203,8 @@ public class DownloadService {
 			final List<String> siteType,
 			final List<String> stationId,
 			final List<String> state,
-			final List<String> startDateTime,
-			final List<String> endDateTime) throws IOException {
+			final String startDateTime,
+			final String endDateTime) throws IOException {
 		zip.putNextEntry(new ZipEntry(downloadType.name() + "." + mimeType.getFileSuffix()));
 		new SosAggregationService(
 				downloadType, 
@@ -239,8 +239,8 @@ public class DownloadService {
 			final List<String> siteType,
 			final List<String> stationId,
 			final List<String> state,
-			final List<String> startDateTime,
-			final List<String> endDateTime) {
+			final String startDateTime,
+			final String endDateTime) {
 		StringBuffer sb = new StringBuffer();
 		
 		//List service criteria
@@ -253,8 +253,8 @@ public class DownloadService {
 		prettyPrintParamList(sb, siteType, DownloadServiceParameters.SITE_TYPE_PARAM);
 		prettyPrintParamList(sb, stationId, DownloadServiceParameters.STATION_ID_PARAM);
 		prettyPrintParamList(sb, state, DownloadServiceParameters.STATE_PARAM);
-		prettyPrintParamList(sb, startDateTime, DownloadServiceParameters.START_DATE_PARAM);
-		prettyPrintParamList(sb, endDateTime, DownloadServiceParameters.END_DATE_PARAM);
+		prettyPrintParamList(sb, Arrays.asList(startDateTime), DownloadServiceParameters.START_DATE_PARAM);
+		prettyPrintParamList(sb, Arrays.asList(endDateTime), DownloadServiceParameters.END_DATE_PARAM);
 		sb.append("\n\n");
 		
 		//List data headers which match request
