@@ -12,7 +12,6 @@ import gov.usgs.webservices.framework.basic.MimeType;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -25,6 +24,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
@@ -80,6 +80,7 @@ public class DownloadService {
 			public void write(OutputStream output) throws IOException, WebApplicationException {
 				ZipOutputStream zip = null;
 				try {
+					
 					zip = new ZipOutputStream(output);
 					addRequestSummaryEntry(zip, buildRequestDescriptionFromParams(mimeType,
 							dataType,
@@ -91,7 +92,7 @@ public class DownloadService {
 							state,
 							startDateTime,
 							endDateTime));
-
+					
 					if(ServiceParameterUtils.isSiteInformationRequested(dataType)) {
 						addSiteInformationEntry(zip, mimeType,
 								siteType,
@@ -178,8 +179,11 @@ public class DownloadService {
 						IOUtils.closeQuietly(zip);
 				}
 			}
-		}).header("Content-Disposition", "attachment; filename=\"data.zip\"")
-		.type(MediaType.APPLICATION_OCTET_STREAM_TYPE).build();
+		}, MediaType.APPLICATION_OCTET_STREAM)
+		.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"data.zip\"")
+		.header(HttpHeaders.CONTENT_LENGTH, "-1")
+		.header(HttpHeaders.CONTENT_ENCODING, "chunked")
+		.build();
 	}
 
 	private void addSiteInformationEntry(ZipOutputStream zip, 
@@ -241,7 +245,7 @@ public class DownloadService {
 
 	private void addRequestSummaryEntry(ZipOutputStream zip, String requestDescription) throws IOException {
 		zip.putNextEntry(new ZipEntry("request.txt"));
-		zip.write(requestDescription.getBytes());
+		zip.write(requestDescription.getBytes("UTF-8"));
 		zip.flush();
 		zip.closeEntry();
 	}
