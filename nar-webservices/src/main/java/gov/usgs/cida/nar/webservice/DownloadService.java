@@ -1,13 +1,12 @@
 package gov.usgs.cida.nar.webservice;
 
 import gov.usgs.cida.nar.service.DownloadServiceParameters;
-
 import static gov.usgs.cida.nar.service.DownloadServiceParameters.*;
-
 import gov.usgs.cida.nar.service.DownloadType;
 import gov.usgs.cida.nar.service.SiteInformationService;
 import gov.usgs.cida.nar.service.SosAggregationService;
 import gov.usgs.cida.nar.util.DescriptionLoaderSingleton;
+import gov.usgs.cida.nar.util.JNDISingleton;
 import gov.usgs.cida.nar.util.ServiceParameterUtils;
 import gov.usgs.webservices.framework.basic.MimeType;
 
@@ -27,14 +26,20 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
-import org.apache.commons.io.IOUtils;
 
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Path("download")
 public class DownloadService {
 	private final static Logger LOG = LoggerFactory.getLogger(DownloadService.class);
+	private static final String OBSERVED_PROPERTY_PREFIX = "http://cida.usgs.gov/def/NAR/property/";
+	private static final String SOS_URL_JNDI_NAME = "nar.endpoint.sos";
+	//This list is needed to mimic the "get all" when no constituents are chosen from the front end
+	private static final List<String> CONSTITUENT_LIST = Arrays.asList(
+			"NH3", "NO23", "OP", "SI", "SSC", "TN", "TP"
+			);
 	
 	@GET
 	@Path("/bundle/zip")
@@ -44,13 +49,21 @@ public class DownloadService {
 			@QueryParam(DATA_TYPE_PARAM) final List<String> dataType,
 			@QueryParam(QW_DATA_TYPE_PARAM) final List<String> qwDataType,
 			@QueryParam(STREAM_FLOW_TYPE_PARAM) final List<String> streamFlowType,
-			@QueryParam(CONSTITUENT_PARAM) final List<String> constituent,
+			@QueryParam(CONSTITUENT_PARAM) final List<String> inConstituent,
 			@QueryParam(SITE_TYPE_PARAM) final List<String> siteType,
 			@QueryParam(STATION_ID_PARAM) final List<String> stationId,
 			@QueryParam(STATE_PARAM) final List<String> state,
 			@QueryParam(START_DATE_PARAM) final List<String> startDateTime,
 			@QueryParam(END_DATE_PARAM) final List<String> endDateTime) throws NamingException {
 		LOG.debug("Stream full zipped bundle started");
+		
+		//default to "All constituents"
+		final List<String> constituent;
+		if(inConstituent == null || inConstituent.size() > 0) {
+			constituent = CONSTITUENT_LIST;
+		} else {
+			constituent = inConstituent;
+		}
 		
 		//TODO fix up siteType and stationId lists based on the presence/absence of MRB sites/types
 		
@@ -193,17 +206,21 @@ public class DownloadService {
 			final List<String> startDateTime,
 			final List<String> endDateTime) throws IOException {
 		zip.putNextEntry(new ZipEntry(downloadType.name() + "." + mimeType.getFileSuffix()));
-		new SosAggregationService(downloadType).streamData(zip, 
-				mimeType,
-				dataType,
-				qwDataType,
-				streamFlowType,
-				constituent,
-				siteType,
-				stationId,
-				state,
-				startDateTime,
-				endDateTime);
+		new SosAggregationService(
+				downloadType, 
+				JNDISingleton.getInstance().getProperty(SOS_URL_JNDI_NAME),
+				OBSERVED_PROPERTY_PREFIX
+				).streamData(zip, 
+					mimeType,
+					dataType,
+					qwDataType,
+					streamFlowType,
+					constituent,
+					siteType,
+					stationId,
+					state,
+					startDateTime,
+					endDateTime);
 		zip.closeEntry();
 	}
 
@@ -218,7 +235,7 @@ public class DownloadService {
 			final List<String> dataType,
 			final List<String> qwDataType,
 			final List<String> streamFlowType,
-			final List<String> constituent,
+			List<String> constituent,
 			final List<String> siteType,
 			final List<String> stationId,
 			final List<String> state,

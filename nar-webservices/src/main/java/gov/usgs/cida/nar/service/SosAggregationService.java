@@ -34,12 +34,14 @@ public class SosAggregationService {
 	
 	private static final Logger log = Logger.getLogger(SosAggregationService.class);
 	
-	private static final String SOS_URL_JNDI_NAME = "nar.endpoint.sos";
-	
 	private DownloadType type;
+	private String sosUrl;
+	private String observedPropertyPrefix;
 	
-	public SosAggregationService(DownloadType type) {
+	public SosAggregationService(DownloadType type, String sosUrl, String observedPropertyPrefix) {
 		this.type = type;
+		this.sosUrl = sosUrl;
+		this.observedPropertyPrefix = observedPropertyPrefix;
 	}
 	
 	public void streamData(OutputStream output,
@@ -53,8 +55,6 @@ public class SosAggregationService {
 			final List<String> state,
 			final List<String> startDateTime,
 			final List<String> endDateTime) throws IOException {
-		
-		String sosUrl = JNDISingleton.getInstance().getProperty(SOS_URL_JNDI_NAME);
 		
 		final List<SOSConnector> sosConnectors = getSosConnectors(
 				dataType,
@@ -123,6 +123,24 @@ public class SosAggregationService {
 			final List<String> endDateTime) {
 		List<SOSConnector> sosConnectors = new ArrayList<>();
 		
+		//Use the constituent list as the observed properties unless the enum has a list
+		List<String> observedProperties = this.type.getObservedProperties();
+		if(observedProperties == null) {
+			observedProperties = new ArrayList<>();
+			for(String prop : constituent) {
+				observedProperties.add(this.observedPropertyPrefix + prop);
+			}
+		}
+		
+		for(String procedure : this.type.getProcedures()) {
+			final SOSConnector sosConnector = new SOSConnector(sosUrl, 
+					null, 
+					null, 
+					observedProperties, 
+					Arrays.asList(procedure),
+					stationId);
+			sosConnectors.add(sosConnector);
+		}
 		return sosConnectors;
 	}
 	
