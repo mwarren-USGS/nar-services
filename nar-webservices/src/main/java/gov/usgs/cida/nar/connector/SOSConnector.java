@@ -13,18 +13,11 @@ import java.sql.ResultSet;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.logging.Level;
 import javax.xml.stream.XMLStreamException;
-import org.opengis.filter.Filter;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static gov.usgs.cida.nar.connector.WFSConnector.WFS_LAT_COL_NAME;
-import static gov.usgs.cida.nar.connector.WFSConnector.WFS_LONG_COL_NAME;
-import static gov.usgs.cida.nar.connector.WFSConnector.WFS_SITE_FID_COL_NAME;
-import static gov.usgs.cida.nar.connector.WFSConnector.WFS_SITE_ID_COL_NAME;
-import static gov.usgs.cida.nar.connector.WFSConnector.WFS_SITE_TYPE_COL_NAME;
-import static gov.usgs.cida.nar.connector.WFSConnector.WFS_STA_NAME_COL_NAME;
 
 
 /**
@@ -44,8 +37,8 @@ public class SOSConnector implements IConnector {
 	private SOSClient client;
 	private ColumnGrouping cg;
 	private String sosEndpoint;
-	private Date startTime;
-	private Date endTime;
+	private DateTime startTime;
+	private DateTime endTime;
 	private List<String> observedProperties;
 	private List<String> procedures;
 	private List<String> featuresOfInterest;
@@ -53,7 +46,7 @@ public class SOSConnector implements IConnector {
 	private boolean isReady;
 
 
-	public SOSConnector(String sosEndpoint, Date startTime, Date endTime, List<String> observedProperties,
+	public SOSConnector(String sosEndpoint, DateTime startTime, DateTime endTime, List<String> observedProperties,
 			List<String> procedures, List<String> featuresOfInterest) {
 		this.sosEndpoint = sosEndpoint;
 		this.startTime = startTime;

@@ -7,8 +7,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import javax.ws.rs.client.Client;
@@ -18,7 +16,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.joda.time.format.ISODateTimeFormat;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,13 +30,13 @@ public class SOSClient extends Thread implements AutoCloseable {
 	
 	private File file;
 	private String sosEndpoint;
-	private Date startTime;
-	private Date endTime;
+	private DateTime startTime;
+	private DateTime endTime;
 	private List<String> observedProperties;
 	private List<String> procedures;
 	private List<String> featuresOfInterest;
 
-	public SOSClient(String sosEndpoint, Date startTime, Date endTime, List<String> observedProperties,
+	public SOSClient(String sosEndpoint, DateTime startTime, DateTime endTime, List<String> observedProperties,
 			List<String> procedures, List<String> featuresOfInterest) {
 		UUID randomUUID = UUID.randomUUID();
 		this.file = FileUtils.getFile(FileUtils.getTempDirectory(), randomUUID.toString() + ".xml");
@@ -92,7 +90,7 @@ public class SOSClient extends Thread implements AutoCloseable {
 		}
 	}
 	
-	private static Entity buildXml(Date startTime, Date endTime, List<String> observedProperties,
+	private static Entity buildXml(DateTime startTime, DateTime endTime, List<String> observedProperties,
 			List<String> procedures, List<String> featuresOfInterest) {
 		StringBuilder builder = new StringBuilder();
 		builder.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
@@ -118,8 +116,8 @@ public class SOSClient extends Thread implements AutoCloseable {
 				.append("<gml:TimePeriod gml:id=\"tp_1\">")
 				
 				// TODO Add times here from parameters
-				.append("<gml:beginPosition>2010-11-19T15:00:00.000+01:00</gml:beginPosition>")
-				.append("<gml:endPosition>2012-11-19T15:00:00.000+01:00</gml:endPosition>")
+				.append("<gml:beginPosition>" + startTime.toString() + "</gml:beginPosition>")
+				.append("<gml:endPosition>" + endTime.toString() + "</gml:endPosition>")
 				
 				.append("</gml:TimePeriod>")
 				.append("</fes:During>")
@@ -128,7 +126,7 @@ public class SOSClient extends Thread implements AutoCloseable {
 		for (String feature : featuresOfInterest) {
 			builder.append("<sos:featureOfInterest>" + feature + "</sos:featureOfInterest>");
 		}
-		builder.append("<sos:responseFormat>http://www.opengis.net/om/2.0</sos:responseFormat>")
+		builder.append("<sos:responseFormat>http://www.opengis.net/waterml/2.0</sos:responseFormat>")
 				.append("</sos:GetObservation>");
 		return Entity.xml(builder.toString());
 	}

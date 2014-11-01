@@ -3,11 +3,7 @@ package gov.usgs.cida.nar.service;
 import gov.usgs.cida.nar.connector.SOSConnector;
 import gov.usgs.cida.nar.util.DescriptionLoaderSingleton;
 import gov.usgs.cida.nar.util.JNDISingleton;
-import gov.usgs.cida.nude.column.Column;
 import gov.usgs.cida.nude.column.ColumnGrouping;
-import gov.usgs.cida.nude.filter.FilterStageBuilder;
-import gov.usgs.cida.nude.filter.FilterStep;
-import gov.usgs.cida.nude.filter.NudeFilterBuilder;
 import gov.usgs.cida.nude.out.Dispatcher;
 import gov.usgs.cida.nude.out.StreamResponse;
 import gov.usgs.cida.nude.out.TableResponse;
@@ -24,11 +20,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.logging.Level;
-
 import javax.xml.stream.XMLStreamException;
 
 import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
+
 
 public class SosAggregationService {
 	
@@ -57,6 +53,7 @@ public class SosAggregationService {
 		String sosUrl = JNDISingleton.getInstance().getProperty(SOS_URL_JNDI_NAME);
 		
 		final List<SOSConnector> sosConnectors = getSosConnectors(
+				sosUrl,
 				dataType,
 				qwDataType,
 				streamFlowType,
@@ -67,52 +64,56 @@ public class SosAggregationService {
 				startDateTime,
 				endDateTime);
 		
-//		List<PlanStep> steps = new LinkedList<>();
-//		PlanStep connectorStep;
-//		connectorStep = new PlanStep() {
-//			
-//			@Override
-//			public ResultSet runStep(ResultSet rs) {
-//				while (!sosConnector.isReady()) {
-//					try {
-//						Thread.sleep(1000);
-//					}
-//					catch (InterruptedException ex) {
-//						log.debug(ex);
-//					}
-//				}
-//				return sosConnector.getResultSet();
-//			}
-//
-//			@Override
-//			public ColumnGrouping getExpectedColumns() {
-//				return sosConnector.getExpectedColumns();
-//			}
-//		};
-//		
-//		steps.add(connectorStep);
-//
-//		Plan plan = new Plan(steps);
-//		
-//		ResultSet runStep = Plan.runPlan(plan);
-//		TableResponse tr = new TableResponse(runStep);
-//		StreamResponse sr = null;
-//		try {
-//			sr = Dispatcher.buildFormattedResponse(mimeType, tr);
-//		} catch (IOException| SQLException | XMLStreamException ex) {
-//			log.error("Unable to build formatted response", ex);
-//		}
-//		if (sr != null && output != null) {
+		// just one for now
+		final SOSConnector sosConnector = sosConnectors.get(0);
+		
+		List<PlanStep> steps = new LinkedList<>();
+		PlanStep connectorStep;
+		connectorStep = new PlanStep() {
+			
+			@Override
+			public ResultSet runStep(ResultSet rs) {
+				while (!sosConnector.isReady()) {
+					try {
+						Thread.sleep(1000);
+					}
+					catch (InterruptedException ex) {
+						log.debug(ex);
+					}
+				}
+				return sosConnector.getResultSet();
+			}
+
+			@Override
+			public ColumnGrouping getExpectedColumns() {
+				return sosConnector.getExpectedColumns();
+			}
+		};
+		
+		steps.add(connectorStep);
+
+		Plan plan = new Plan(steps);
+		
+		ResultSet runStep = Plan.runPlan(plan);
+		TableResponse tr = new TableResponse(runStep);
+		StreamResponse sr = null;
+		try {
+			sr = Dispatcher.buildFormattedResponse(mimeType, tr);
+		} catch (IOException| SQLException | XMLStreamException ex) {
+			log.error("Unable to build formatted response", ex);
+		}
+		if (sr != null && output != null) {
 			if (mimeType == MimeType.CSV || mimeType == MimeType.TAB) {
 				output.write(DescriptionLoaderSingleton.getDescription(type.getTitle()).getBytes());
 			}
-//			StreamResponse.dispatch(sr, new PrintWriter(output));
-//			output.flush();
-//			sosConnector.close();
-//		}
+			StreamResponse.dispatch(sr, new PrintWriter(output));
+			output.flush();
+			sosConnector.close();
+		}
 	}
 	
-	public List<SOSConnector> getSosConnectors(final List<String> dataType,
+	public List<SOSConnector> getSosConnectors(final String sosUrl,
+			final List<String> dataType,
 			final List<String> qwDataType,
 			final List<String> streamFlowType,
 			final List<String> constituent,
@@ -122,7 +123,10 @@ public class SosAggregationService {
 			final List<String> startDateTime,
 			final List<String> endDateTime) {
 		List<SOSConnector> sosConnectors = new ArrayList<>();
-		
+		sosConnectors.add(new SOSConnector(sosUrl, new DateTime("2008-01-01"), new DateTime("2012-12-31"),
+				Arrays.asList("http://cida.usgs.gov/def/NAR/property/Q"), 
+				Arrays.asList("http://cida.usgs.gov/def/NAR/procedure/annual_flow"),
+				Arrays.asList("08057410")));
 		return sosConnectors;
 	}
 	

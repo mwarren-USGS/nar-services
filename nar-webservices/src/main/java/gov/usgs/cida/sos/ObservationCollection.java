@@ -47,7 +47,7 @@ public class ObservationCollection implements Iterable, Iterator, Closeable {
 		} else {
 			try {
 				currentObservation = gatherObservation();
-				hasNext = true;
+				hasNext = (currentObservation != null) ? true : false;
 			} catch (XMLStreamException ex) {
 				log.error("Problem with xml stream", ex);
 			} catch (EndOfXmlStreamException ex) {
@@ -75,11 +75,9 @@ public class ObservationCollection implements Iterable, Iterator, Closeable {
 	}
 	
 	protected Observation gatherObservation() throws XMLStreamException, EndOfXmlStreamException {
-		Observation ob = new Observation();
+		Observation ob = null;
 		
-		
-		
-		while (this.reader.hasNext() && !ob.isReady()) {
+		while (this.reader.hasNext() && (ob == null || !ob.isReady())) {
 			switch (reader.next()) {
 				case XMLStreamConstants.START_ELEMENT:
 					// Start metadata collection
@@ -116,6 +114,7 @@ public class ObservationCollection implements Iterable, Iterator, Closeable {
 					// End metadata collection
 					
 					if (isElement(Observation.TIME_ELEMENT)) {
+						ob = new Observation().metadata(this.sharedMetadata);
 						ob.time(new DateTime(reader.getElementText()));
 					}
 					if (isElement(Observation.VALUE_ELEMENT)) {
