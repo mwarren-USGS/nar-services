@@ -4,7 +4,6 @@ public enum DownloadType {
 	annualLoad("Annual loads"),
 	annualFlow("Annual flow"),
 	mayLoad("May loads"),
-	monthlyFlow("Monthly flow"),
 	dailyFlow("Daily flow"),
 	discreteQw("Discrete QW"),
 	siteAttribute("Site attribute");

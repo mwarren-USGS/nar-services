@@ -36,7 +36,9 @@ public class ServiceParameterUtils {
 	}
 	
 	public static boolean isMayLoadsRequested(final List<String> inDataTypes, final List<String> inQwDataTypes, final List<String> siteTypes) {
-		return siteTypes != null && siteTypes.contains(MRB_SITE_TYPE) && isQwParamRequested(inDataTypes, inQwDataTypes, DownloadType.mayLoad);
+		return 
+				isQwParamRequested(inDataTypes, inQwDataTypes, DownloadType.mayLoad) &&
+				(siteTypes == null || siteTypes.size() == 0 || siteTypes.contains(MRB_SITE_TYPE));
 	}
 	
 	private static boolean isQwParamRequested(final List<String> dataTypes, final List<String> qwDataTypes, DownloadType qwParamType) {
@@ -53,10 +55,6 @@ public class ServiceParameterUtils {
 	
 	public static boolean isAnnualFlowRequested(final List<String> inDataTypes, final List<String> inStreamFlowTypes) {
 		return isFlowParamRequested(inDataTypes, inStreamFlowTypes, DownloadType.annualFlow);
-	}
-
-	public static boolean isMonthlyFlowRequested(final List<String> inDataTypes, final List<String> inStreamFlowTypes) {
-		return isFlowParamRequested(inDataTypes, inStreamFlowTypes, DownloadType.monthlyFlow);
 	}
 	
 	public static boolean isDailyFlowRequested(final List<String> inDataTypes, final List<String> inStreamFlowTypes) {
