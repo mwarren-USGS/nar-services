@@ -1,8 +1,8 @@
 package gov.usgs.cida.sos;
 
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -13,14 +13,14 @@ import javax.xml.stream.XMLStreamReader;
  */
 public class WaterML2Parser {
 	
-	private File observationResultFile;
+	private InputStream observationResults;
 	
-	public WaterML2Parser(File observationResultFile) {
-		this.observationResultFile = observationResultFile;
+	public WaterML2Parser(InputStream observationResults) {
+		this.observationResults = observationResults;
 	}
 	
 	public ObservationCollection getObservations() throws FileNotFoundException, XMLStreamException {
-		FileReader reader = new FileReader(observationResultFile);
+		InputStreamReader reader = new InputStreamReader(observationResults);
 		XMLStreamReader xmlReader = XMLInputFactory.newInstance().createXMLStreamReader(reader);
 		ObservationCollection observationCollection = new ObservationCollection(xmlReader);
 		return observationCollection;
