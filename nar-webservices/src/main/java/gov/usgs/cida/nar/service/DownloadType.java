@@ -47,14 +47,11 @@ public enum DownloadType {
 					"http://cida.usgs.gov/def/NAR/procedure/annual_yield/REGHIST",
 					"http://cida.usgs.gov/def/NAR/procedure/annual_yield/REG_3",
 					"http://cida.usgs.gov/def/NAR/procedure/annual_yield/REG_PRELIM",
-					"http://cida.usgs.gov/def/NAR/procedure/annual_yield/REG_PRELIM_FINAL"),
-			null),
+					"http://cida.usgs.gov/def/NAR/procedure/annual_yield/REG_PRELIM_FINAL")
+			),
 	annualFlow("Annual flow", 
 			Arrays.asList(
 					"http://cida.usgs.gov/def/NAR/procedure/annual_flow"
-					), 
-			Arrays.asList(
-					"Q"
 					)),
 	mayLoad("May loads", 
 			Arrays.asList(
@@ -94,31 +91,25 @@ public enum DownloadType {
 					"http://cida.usgs.gov/def/NAR/procedure/monthly_mass_upper_95/REGREG_PRELIM_FINAL",
 					"http://cida.usgs.gov/def/NAR/procedure/monthly_mass_upper_95/REG_3",
 					"http://cida.usgs.gov/def/NAR/procedure/monthly_mass_upper_95/REG_PRELIM",
-					"http://cida.usgs.gov/def/NAR/procedure/monthly_mass_upper_95/REG_PRELIM_FINAL"),
-			null),
+					"http://cida.usgs.gov/def/NAR/procedure/monthly_mass_upper_95/REG_PRELIM_FINAL")
+			),
 	dailyFlow("Daily flow", 
 			Arrays.asList(
 					"http://cida.usgs.gov/def/NAR/procedure/daily_flow"
-					), 
-			Arrays.asList(
-					"Q"
 					)),
 	discreteQw("Discrete QW", 
 			Arrays.asList(
 					"http://cida.usgs.gov/def/NAR/procedure/discrete_concentration"
-					), 
-			null),
+					)),
 	siteAttribute("Site attribute", 
-			null, 
-			null);
+			null 
+			);
 
 	private String title;
 	private List<String> procedures;
-	private List<String> observedProperties;
-	DownloadType(String title, List<String> procedures, List<String> observedProperties) {
+	DownloadType(String title, List<String> procedures) {
 		this.title = title;
 		this.procedures = procedures;
-		this.observedProperties = observedProperties;
 	}
 
 	public String getTitle() {
@@ -127,9 +118,5 @@ public enum DownloadType {
 	
 	public List<String> getProcedures() {
 		return procedures;
-	}
-	
-	public List<String> getObservedProperties() {
-		return observedProperties;
 	}
 }
