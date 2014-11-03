@@ -1,8 +1,6 @@
 package gov.usgs.cida.nar.service;
 
 import gov.usgs.cida.nar.connector.SOSConnector;
-import gov.usgs.cida.nar.util.DescriptionLoaderSingleton;
-import gov.usgs.cida.nar.util.JNDISingleton;
 import gov.usgs.cida.nude.column.ColumnGrouping;
 import gov.usgs.cida.nude.out.Dispatcher;
 import gov.usgs.cida.nude.out.StreamResponse;
@@ -20,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+
 import javax.xml.stream.XMLStreamException;
 
 import org.apache.log4j.Logger;
@@ -50,7 +49,9 @@ public class SosAggregationService {
 			final List<String> stationId,
 			final List<String> state,
 			final String startDateTime,
-			final String endDateTime) throws IOException {
+			final String endDateTime,
+			final String header) throws IOException {
+		//TODO do something with the header
 		
 		final List<SOSConnector> sosConnectors = getSosConnectors(
 				sosUrl,
@@ -81,6 +82,7 @@ public class SosAggregationService {
 						log.debug(ex);
 					}
 				}
+				
 				return sosConnector.getResultSet();
 			}
 
@@ -103,9 +105,6 @@ public class SosAggregationService {
 			log.error("Unable to build formatted response", ex);
 		}
 		if (sr != null && output != null) {
-			if (mimeType == MimeType.CSV || mimeType == MimeType.TAB) {
-				output.write(DescriptionLoaderSingleton.getDescription(type.getTitle()).getBytes());
-			}
 			StreamResponse.dispatch(sr, new PrintWriter(output));
 			output.flush();
 			sosConnector.close();
@@ -123,20 +122,30 @@ public class SosAggregationService {
 			final String startDateTime,
 			final String endDateTime) {
 		List<SOSConnector> sosConnectors = new ArrayList<>();
-		//Use the constituent list as the observed properties unless the enum has a list
-		List<String> inferredProperties = this.type.getObservedProperties();
+		
 		List<String> actualProperties = new ArrayList<>();
-		for(String prop : inferredProperties) {
-			actualProperties.add(this.observedPropertyPrefix + prop);
-		}
 		for(String prop : constituent) {
 			actualProperties.add(this.observedPropertyPrefix + prop);
 		}
 		
+		DateTime start = null;
+		try {
+			start = new DateTime(startDateTime);
+		} catch(Exception e) {
+			log.debug(e);
+		}
+		DateTime end = null;
+		try {
+			end = new DateTime(endDateTime);
+		} catch(Exception e) {
+			log.debug(e);
+		}
+		
+		
 		for(String procedure : this.type.getProcedures()) {
 			final SOSConnector sosConnector = new SOSConnector(sosUrl, 
-					new DateTime(startDateTime), 
-					new DateTime(endDateTime), 
+					start, 
+					end, 
 					actualProperties, 
 					Arrays.asList(procedure),
 					stationId);
