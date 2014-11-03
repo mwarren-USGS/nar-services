@@ -112,13 +112,18 @@ public class ObservationCollection implements Iterable, Iterator, Closeable {
 						}
 					}
 					// End metadata collection
-					
-					if (isElement(Observation.TIME_ELEMENT)) {
+					if (isElement(Observation.POINT_ELEMENT)) {
 						ob = new Observation().metadata(this.sharedMetadata);
-						ob.time(new DateTime(reader.getElementText()));
+					}
+					if (isElement(Observation.TIME_ELEMENT)) {
+						if (ob != null) {
+							ob.time(new DateTime(reader.getElementText()));
+						}
 					}
 					if (isElement(Observation.VALUE_ELEMENT)) {
-						ob.value(reader.getElementText());
+						if (ob != null) {
+							ob.value(reader.getElementText());
+						}
 					}
 					break;
 				case XMLStreamConstants.END_ELEMENT:
@@ -128,7 +133,9 @@ public class ObservationCollection implements Iterable, Iterator, Closeable {
 					
 					if (isElement(Observation.POINT_ELEMENT)) {
 						// IMPORTANT: this is what triggers the return
-						ob.setReady(true);
+						if (ob != null) {
+							ob.setReady(true);
+						}
 					}
 					break;
 				case XMLStreamConstants.END_DOCUMENT:
