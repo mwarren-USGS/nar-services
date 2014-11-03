@@ -12,6 +12,7 @@ import gov.usgs.webservices.framework.basic.MimeType;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -19,15 +20,12 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import javax.naming.NamingException;
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.StreamingOutput;
+import javax.ws.rs.core.Context;
 
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -47,7 +45,7 @@ public class DownloadService {
 	@GET
 	@Path("/bundle/zip")
 	@Produces("application/zip")
-	public Response downloadZippedBundle(
+	public void downloadZippedBundle(
 			@QueryParam(MIME_TYPE_PARAM) final String mimeTypeParam,
 			@QueryParam(DATA_TYPE_PARAM) final List<String> dataType,
 			@QueryParam(QW_DATA_TYPE_PARAM) final List<String> qwDataType,
@@ -57,7 +55,8 @@ public class DownloadService {
 			@QueryParam(STATION_ID_PARAM) final List<String> stationId,
 			@QueryParam(STATE_PARAM) final List<String> state,
 			@QueryParam(START_DATE_PARAM) final String startDateTime,
-			@QueryParam(END_DATE_PARAM) final String endDateTime) throws NamingException {
+			@QueryParam(END_DATE_PARAM) final String endDateTime,
+			@Context HttpServletResponse response) throws NamingException, IOException {
 		LOG.debug("Stream full zipped bundle started");
 		
 		//default to "All constituents"
@@ -75,115 +74,111 @@ public class DownloadService {
 			throw new RuntimeException("mimeType not supported");
 		}
 
-		return Response.ok(new StreamingOutput() {
-			@Override
-			public void write(OutputStream output) throws IOException, WebApplicationException {
-				ZipOutputStream zip = null;
-				try {
-					
-					zip = new ZipOutputStream(output);
-					addRequestSummaryEntry(zip, buildRequestDescriptionFromParams(mimeType,
-							dataType,
-							qwDataType,
-							streamFlowType,
-							constituent,
-							siteType,
-							stationId,
-							state,
-							startDateTime,
-							endDateTime));
-					
-					if(ServiceParameterUtils.isSiteInformationRequested(dataType)) {
-						addSiteInformationEntry(zip, mimeType,
-								siteType,
-								stationId,
-								state);
-					}
-					
-					if(ServiceParameterUtils.isDiscreteQwRequested(dataType, qwDataType)) {
-						addAggregatedSosEntry(zip, 
-								DownloadType.discreteQw,
-								mimeType,
-								dataType,
-								qwDataType,
-								streamFlowType,
-								constituent,
-								siteType,
-								stationId,
-								state,
-								startDateTime,
-								endDateTime);
-					}
-
-					if(ServiceParameterUtils.isAnnualLoadsRequested(dataType, qwDataType)) {
-						addAggregatedSosEntry(zip, 
-								DownloadType.annualLoad,
-								mimeType,
-								dataType,
-								qwDataType,
-								streamFlowType,
-								constituent,
-								siteType,
-								stationId,
-								state,
-								startDateTime,
-								endDateTime);
-					}
-
-					if(ServiceParameterUtils.isMayLoadsRequested(dataType, qwDataType, siteType)) {
-						addAggregatedSosEntry(zip, 
-								DownloadType.mayLoad,
-								mimeType,
-								dataType,
-								qwDataType,
-								streamFlowType,
-								constituent,
-								siteType,
-								stationId,
-								state,
-								startDateTime,
-								endDateTime);
-					}
-
-					if(ServiceParameterUtils.isDailyFlowRequested(dataType, streamFlowType)) {
-						addAggregatedSosEntry(zip, 
-								DownloadType.dailyFlow,
-								mimeType,
-								dataType,
-								qwDataType,
-								streamFlowType,
-								constituent,
-								siteType,
-								stationId,
-								state,
-								startDateTime,
-								endDateTime);
-					}
-
-					if(ServiceParameterUtils.isAnnualFlowRequested(dataType, streamFlowType)) {
-						addAggregatedSosEntry(zip, 
-							DownloadType.annualFlow,
-							mimeType,
-							dataType,
-							qwDataType,
-							streamFlowType,
-							constituent,
-							siteType,
-							stationId,
-							state,
-							startDateTime,
-							endDateTime);
-					}
-
-				} finally {
-						IOUtils.closeQuietly(zip);
-				}
+		OutputStream output = response.getOutputStream();
+		response.addHeader("Content-Disposition", "attachment; filename=\"data.zip\"");
+		response.addHeader("Pragma", "public");
+		response.addHeader("Cache-Control", "max-age=0");
+		
+		ZipOutputStream zip = null;
+		try {
+			
+			zip = new ZipOutputStream(output, StandardCharsets.UTF_8);
+			addRequestSummaryEntry(zip, buildRequestDescriptionFromParams(mimeType,
+					dataType,
+					qwDataType,
+					streamFlowType,
+					constituent,
+					siteType,
+					stationId,
+					state,
+					startDateTime,
+					endDateTime));
+			
+			if(ServiceParameterUtils.isSiteInformationRequested(dataType)) {
+				addSiteInformationEntry(zip, mimeType,
+						siteType,
+						stationId,
+						state);
 			}
-		}, MediaType.APPLICATION_OCTET_STREAM)
-		.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"data.zip\"")
-		.header(HttpHeaders.CONTENT_LENGTH, "-1")
-		.header(HttpHeaders.CONTENT_ENCODING, "chunked")
-		.build();
+			
+			if(ServiceParameterUtils.isDiscreteQwRequested(dataType, qwDataType)) {
+				addAggregatedSosEntry(zip, 
+						DownloadType.discreteQw,
+						mimeType,
+						dataType,
+						qwDataType,
+						streamFlowType,
+						constituent,
+						siteType,
+						stationId,
+						state,
+						startDateTime,
+						endDateTime);
+			}
+
+			if(ServiceParameterUtils.isAnnualLoadsRequested(dataType, qwDataType)) {
+				addAggregatedSosEntry(zip, 
+						DownloadType.annualLoad,
+						mimeType,
+						dataType,
+						qwDataType,
+						streamFlowType,
+						constituent,
+						siteType,
+						stationId,
+						state,
+						startDateTime,
+						endDateTime);
+			}
+
+			if(ServiceParameterUtils.isMayLoadsRequested(dataType, qwDataType, siteType)) {
+				addAggregatedSosEntry(zip, 
+						DownloadType.mayLoad,
+						mimeType,
+						dataType,
+						qwDataType,
+						streamFlowType,
+						constituent,
+						siteType,
+						stationId,
+						state,
+						startDateTime,
+						endDateTime);
+			}
+
+			if(ServiceParameterUtils.isDailyFlowRequested(dataType, streamFlowType)) {
+				addAggregatedSosEntry(zip, 
+						DownloadType.dailyFlow,
+						mimeType,
+						dataType,
+						qwDataType,
+						streamFlowType,
+						constituent,
+						siteType,
+						stationId,
+						state,
+						startDateTime,
+						endDateTime);
+			}
+
+			if(ServiceParameterUtils.isAnnualFlowRequested(dataType, streamFlowType)) {
+				addAggregatedSosEntry(zip, 
+					DownloadType.annualFlow,
+					mimeType,
+					dataType,
+					qwDataType,
+					streamFlowType,
+					constituent,
+					siteType,
+					stationId,
+					state,
+					startDateTime,
+					endDateTime);
+			}
+
+		} finally {
+				IOUtils.closeQuietly(zip);
+		}
 	}
 
 	private void addSiteInformationEntry(ZipOutputStream zip, 
