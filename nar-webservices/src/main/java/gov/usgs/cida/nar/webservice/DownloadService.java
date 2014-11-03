@@ -219,6 +219,11 @@ public class DownloadService {
 			constituentsToUse.addAll(constituent);
 		}
 		
+		String headerText = null;
+		if (mimeType == MimeType.CSV || mimeType == MimeType.TAB) {
+			headerText = DescriptionLoaderSingleton.getDescription(downloadType.getTitle());
+		}
+		
 		new SosAggregationService(
 				downloadType, 
 				JNDISingleton.getInstance().getProperty(SOS_URL_JNDI_NAME),
@@ -233,7 +238,8 @@ public class DownloadService {
 					stationId,
 					state,
 					startDateTime,
-					endDateTime);
+					endDateTime,
+					headerText);
 		zip.flush();
 		zip.closeEntry();
 	}
