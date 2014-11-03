@@ -1,8 +1,6 @@
 package gov.usgs.cida.nar.service;
 
 import gov.usgs.cida.nar.connector.SOSConnector;
-import gov.usgs.cida.nar.util.DescriptionLoaderSingleton;
-import gov.usgs.cida.nar.util.JNDISingleton;
 import gov.usgs.cida.nude.column.ColumnGrouping;
 import gov.usgs.cida.nude.out.Dispatcher;
 import gov.usgs.cida.nude.out.StreamResponse;
@@ -20,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+
 import javax.xml.stream.XMLStreamException;
 
 import org.apache.log4j.Logger;
@@ -50,7 +49,9 @@ public class SosAggregationService {
 			final List<String> stationId,
 			final List<String> state,
 			final String startDateTime,
-			final String endDateTime) throws IOException {
+			final String endDateTime,
+			final String header) throws IOException {
+		//TODO do something with the header
 		
 		final List<SOSConnector> sosConnectors = getSosConnectors(
 				sosUrl,
@@ -81,6 +82,7 @@ public class SosAggregationService {
 						log.debug(ex);
 					}
 				}
+				
 				return sosConnector.getResultSet();
 			}
 
@@ -103,9 +105,6 @@ public class SosAggregationService {
 			log.error("Unable to build formatted response", ex);
 		}
 		if (sr != null && output != null) {
-			if (mimeType == MimeType.CSV || mimeType == MimeType.TAB) {
-				output.write(DescriptionLoaderSingleton.getDescription(type.getTitle()).getBytes());
-			}
 			StreamResponse.dispatch(sr, new PrintWriter(output));
 			output.flush();
 			sosConnector.close();
