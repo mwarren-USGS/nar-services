@@ -74,7 +74,7 @@ public class SOSClient extends Thread implements AutoCloseable {
 		Response response = client.target(this.sosEndpoint)
 				.path("")
 				.request(new MediaType[]{MediaType.APPLICATION_XML_TYPE})
-				.post(buildXml(startTime, endTime, observedProperties, procedures, featuresOfInterest));
+				.post(buildGetObservationRequest(startTime, endTime, observedProperties, procedures, featuresOfInterest));
 		
 		OutputStream os = null;
 		InputStream returnStream = null;
@@ -90,7 +90,7 @@ public class SOSClient extends Thread implements AutoCloseable {
 		}
 	}
 	
-	private static Entity buildXml(DateTime startTime, DateTime endTime, List<String> observedProperties,
+	private static Entity buildGetObservationRequest(DateTime startTime, DateTime endTime, List<String> observedProperties,
 			List<String> procedures, List<String> featuresOfInterest) {
 		StringBuilder builder = new StringBuilder();
 		builder.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
@@ -109,24 +109,24 @@ public class SOSClient extends Thread implements AutoCloseable {
 		for (String obsProp : observedProperties) {
 			builder.append("<sos:observedProperty>" + obsProp + "</sos:observedProperty>");
 		}
-		
-		builder.append("<sos:temporalFilter>")
-				.append("<fes:During>")
-				.append("<fes:ValueReference>phenomenonTime</fes:ValueReference>")
-				.append("<gml:TimePeriod gml:id=\"tp_1\">");
-				
+		if (startTime != null || endTime != null) {
+			builder.append("<sos:temporalFilter>")
+					.append("<fes:During>")
+					.append("<fes:ValueReference>phenomenonTime</fes:ValueReference>")
+					.append("<gml:TimePeriod gml:id=\"tp_1\">");
 
-		if(startTime != null) {
-			builder.append("<gml:beginPosition>" + startTime.toString() + "</gml:beginPosition>");
-		}
-		if(endTime != null){
-			builder.append("<gml:endPosition>" + endTime.toString() + "</gml:endPosition>");
-		}
-				
-		builder.append("</gml:TimePeriod>")
-				.append("</fes:During>")
-				.append("</sos:temporalFilter>");
 
+			if(startTime != null) {
+				builder.append("<gml:beginPosition>" + startTime.toString() + "</gml:beginPosition>");
+			}
+			if(endTime != null){
+				builder.append("<gml:endPosition>" + endTime.toString() + "</gml:endPosition>");
+			}
+
+			builder.append("</gml:TimePeriod>")
+					.append("</fes:During>")
+					.append("</sos:temporalFilter>");
+		}
 		for (String feature : featuresOfInterest) {
 			builder.append("<sos:featureOfInterest>" + feature + "</sos:featureOfInterest>");
 		}
