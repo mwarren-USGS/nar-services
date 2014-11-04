@@ -68,73 +68,73 @@ public class SosAggregationService {
 				startDateTime,
 				endDateTime);
 		
-		List<PlanStep> steps = new LinkedList<>();
-		PlanStep connectorStep;
-		connectorStep = new PlanStep() {
-			
-			@Override
-			public ResultSet runStep(ResultSet rs) {
-				//boolean areAllReady = false;
-				List<ResultSet> rsets = new ArrayList<>();
-				//while (!areAllReady) {
-//					boolean readyCheck = true;
-//					int numberReady = 0;
-				for (IConnector conn : sosConnectors) {
-
-					while (!conn.isReady()) {
-//						if (connReady) {
-//							numberReady++;
+//		List<PlanStep> steps = new LinkedList<>();
+//		PlanStep connectorStep;
+//		connectorStep = new PlanStep() {
+//			
+//			@Override
+//			public ResultSet runStep(ResultSet rs) {
+//				//boolean areAllReady = false;
+//				List<ResultSet> rsets = new ArrayList<>();
+//				//while (!areAllReady) {
+////					boolean readyCheck = true;
+////					int numberReady = 0;
+//				for (IConnector conn : sosConnectors) {
+//
+//					while (!conn.isReady()) {
+////						if (connReady) {
+////							numberReady++;
+////						}
+////						readyCheck = (readyCheck && connReady);
+//					// TODO make sure isReady() will eventually be true
+//						//}
+//						try {
+//							Thread.sleep(250);
 //						}
-//						readyCheck = (readyCheck && connReady);
-					// TODO make sure isReady() will eventually be true
-						//}
-						try {
-							Thread.sleep(250);
-						}
-						catch (InterruptedException ex) {
-							log.debug(ex);
-						}
-//					areAllReady = readyCheck;
-					}
-				}
-				
-				for (IConnector conn : sosConnectors) {
-					ResultSet resultSet = conn.getResultSet();
-					rsets.add(resultSet);
-				}
-				
-				return new MuxResultSet(rsets);
-			}
-
-			@Override
-			public ColumnGrouping getExpectedColumns() {
-				List<ColumnGrouping> cgs = new ArrayList<>();
-				for (IConnector conn : sosConnectors) {
-					cgs.add(conn.getExpectedColumns());
-				}
-				return ColumnGrouping.join(cgs);
-			}
-		};
-		
-		steps.add(connectorStep);
-
-		Plan plan = new Plan(steps);
-		
-		ResultSet runStep = Plan.runPlan(plan);
-		TableResponse tr = new TableResponse(runStep);
-		StreamResponse sr = null;
-		try {
-			sr = Dispatcher.buildFormattedResponse(mimeType, tr);
-		} catch (IOException| SQLException | XMLStreamException ex) {
-			log.error("Unable to build formatted response", ex);
-		}
-		if (sr != null && output != null) {
-			StreamResponse.dispatch(sr, new PrintWriter(output));
-			output.flush();
-			for (SOSConnector conn : sosConnectors) {
-				IOUtils.closeQuietly(conn);
-			}
-		}
+//						catch (InterruptedException ex) {
+//							log.debug(ex);
+//						}
+////					areAllReady = readyCheck;
+//					}
+//				}
+//				
+//				for (IConnector conn : sosConnectors) {
+//					ResultSet resultSet = conn.getResultSet();
+//					rsets.add(resultSet);
+//				}
+//				
+//				return new MuxResultSet(rsets);
+//			}
+//
+//			@Override
+//			public ColumnGrouping getExpectedColumns() {
+//				List<ColumnGrouping> cgs = new ArrayList<>();
+//				for (IConnector conn : sosConnectors) {
+//					cgs.add(conn.getExpectedColumns());
+//				}
+//				return ColumnGrouping.join(cgs);
+//			}
+//		};
+//		
+//		steps.add(connectorStep);
+//
+//		Plan plan = new Plan(steps);
+//		
+//		ResultSet runStep = Plan.runPlan(plan);
+//		TableResponse tr = new TableResponse(runStep);
+//		StreamResponse sr = null;
+//		try {
+//			sr = Dispatcher.buildFormattedResponse(mimeType, tr);
+//		} catch (IOException| SQLException | XMLStreamException ex) {
+//			log.error("Unable to build formatted response", ex);
+//		}
+//		if (sr != null && output != null) {
+//			StreamResponse.dispatch(sr, new PrintWriter(output));
+//			output.flush();
+//			for (SOSConnector conn : sosConnectors) {
+//				IOUtils.closeQuietly(conn);
+//			}
+//		}
 	}
 	
 	public List<SOSConnector> getSosConnectors(final String sosUrl,

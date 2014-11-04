@@ -50,7 +50,7 @@ public class DownloadService {
 			@QueryParam(DATA_TYPE_PARAM) final List<String> dataType,
 			@QueryParam(QW_DATA_TYPE_PARAM) final List<String> qwDataType,
 			@QueryParam(STREAM_FLOW_TYPE_PARAM) final List<String> streamFlowType,
-			@QueryParam(CONSTITUENT_PARAM) final List<String> inConstituent,
+			@QueryParam(CONSTITUENT_PARAM) final List<String> constituent,
 			@QueryParam(SITE_TYPE_PARAM) final List<String> siteType,
 			@QueryParam(STATION_ID_PARAM) final List<String> stationId,
 			@QueryParam(STATE_PARAM) final List<String> state,
@@ -58,16 +58,6 @@ public class DownloadService {
 			@QueryParam(END_DATE_PARAM) final String endDateTime,
 			@Context HttpServletResponse response) throws NamingException, IOException {
 		LOG.debug("Stream full zipped bundle started");
-		
-		//default to "All constituents"
-		final List<String> constituent;
-		if(inConstituent == null || inConstituent.size() <= 0) {
-			constituent = CONSTITUENT_LIST;
-		} else {
-			constituent = inConstituent;
-		}
-		
-		//TODO fix up siteType and stationId lists based on the presence/absence of MRB sites/types
 		
 		final MimeType mimeType = MimeType.lookup(mimeTypeParam);
 		if (mimeType == null) {
@@ -256,7 +246,7 @@ public class DownloadService {
 			final List<String> dataType,
 			final List<String> qwDataType,
 			final List<String> streamFlowType,
-			List<String> constituent,
+			final List<String> constituent,
 			final List<String> siteType,
 			final List<String> stationId,
 			final List<String> state,

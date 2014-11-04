@@ -35,6 +35,7 @@ public class WFSConnector implements IConnector {
 	public static final String WFS_LONG_COL_NAME = "longitude";
 	public static final String WFS_SITE_TYPE_COL_NAME = "sitetype";
 	public static final String WFS_STATE_COL_NAME = "state";
+	public static final String WFS_MS_SITE_COL_NAME = "MSSite";
 	
 	private ColumnGrouping cg;
 	private WFSClientInterface client;

@@ -38,6 +38,8 @@ public class SiteInformationService {
 	
 	public static final String SITE_ATTRIBUTE_TITLE = DownloadType.siteAttribute.getTitle();
 	public static final String SITE_ATTRIBUTE_OUT_FILENAME = SITE_ATTRIBUTE_TITLE.replaceAll(" ", "_");
+	public static final String MRB_SITE_TYPE_VAL = "MRB";
+	public static final String MS_SITE_VAL = "MS";
 	
 	private static final String SITE_INFO_URL_JNDI_NAME = "nar.endpoint.ows";
 	private static final String SITE_LAYER_NAME = "NAR:JD_NFSN_sites0914";
@@ -107,7 +109,10 @@ public class SiteInformationService {
 			for(String sid : stationId) {
 				stationIdFilters.add(ff.equals(ff.property(WFSConnector.WFS_SITE_ID_COL_NAME), ff.literal(sid)));
 			}
-			filters.add(ff.or(stationIdFilters));
+
+			if(stationIdFilters.size() > 0) {
+				filters.add(ff.or(stationIdFilters));
+			}
 		}
 		
 		if(state != null && state.size() > 0) {
@@ -115,17 +120,29 @@ public class SiteInformationService {
 			for(String st : state) {
 				stateFilters.add(ff.equals(ff.property(WFSConnector.WFS_STATE_COL_NAME), ff.literal(st)));
 			}
-			filters.add(ff.or(stateFilters));
+			if(stateFilters.size() > 0) {
+				filters.add(ff.or(stateFilters));
+			}
 		}
 		
 
+		boolean mrbSiteTypeRequested = false; //add a filter if this is true
 		if(siteType != null && siteType.size() > 0) {
-			//TODO ingore siteType == MRB and add MRB sites to station id filter
 			List<Filter> siteTypeFilters = new ArrayList<>();
 			for(String st : siteType) {
-				siteTypeFilters.add(ff.equals(ff.property(WFSConnector.WFS_SITE_TYPE_COL_NAME), ff.literal(st)));
+				if(st.equals(MRB_SITE_TYPE_VAL)) { //MRB isn't really a site type, it's a UI flag, create a different filter
+					mrbSiteTypeRequested = true;
+				} else {
+					siteTypeFilters.add(ff.equals(ff.property(WFSConnector.WFS_SITE_TYPE_COL_NAME), ff.literal(st)));
+				}
 			}
-			filters.add(ff.or(siteTypeFilters));
+			if(siteTypeFilters.size() > 0) {
+				filters.add(ff.or(siteTypeFilters));
+			}
+		}
+		
+		if(mrbSiteTypeRequested) {
+			filters.add(ff.equals(ff.property(WFSConnector.WFS_MS_SITE_COL_NAME), ff.literal(MS_SITE_VAL)));
 		}
 		
 		if(filters.size() > 0) {
