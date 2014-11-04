@@ -17,7 +17,6 @@ import java.io.PrintWriter;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -26,6 +25,7 @@ import org.apache.commons.io.IOUtils;
 
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
 
 
 public class SosAggregationService {
@@ -74,28 +74,24 @@ public class SosAggregationService {
 			
 			@Override
 			public ResultSet runStep(ResultSet rs) {
-				//boolean areAllReady = false;
+				boolean areAllReady = false;
 				List<ResultSet> rsets = new ArrayList<>();
-				//while (!areAllReady) {
-//					boolean readyCheck = true;
-//					int numberReady = 0;
-				for (IConnector conn : sosConnectors) {
-
-					while (!conn.isReady()) {
-//						if (connReady) {
-//							numberReady++;
-//						}
-//						readyCheck = (readyCheck && connReady);
-					// TODO make sure isReady() will eventually be true
-						//}
-						try {
-							Thread.sleep(250);
-						}
-						catch (InterruptedException ex) {
-							log.debug(ex);
-						}
-//					areAllReady = readyCheck;
+				while (!areAllReady) {
+					boolean readyCheck = true;
+					int numberReady = 0;
+					for (IConnector conn : sosConnectors) {
+						boolean connReady = conn.isReady();
+						readyCheck = (readyCheck && connReady);
 					}
+					// TODO make sure isReady() will eventually be true
+					log.trace(String.format("Streams complete: {} of {}", ++numberReady, sosConnectors.size()));
+					try {
+						Thread.sleep(250);
+					}
+					catch (InterruptedException ex) {
+						log.debug(ex);
+					}
+					areAllReady = readyCheck;
 				}
 				
 				for (IConnector conn : sosConnectors) {
@@ -156,26 +152,28 @@ public class SosAggregationService {
 		
 		DateTime start = null;
 		try {
-			start = new DateTime(startDateTime);
+			start = DateTime.parse(startDateTime, DateTimeFormat.forPattern("MM/dd/yyyy"));
 		} catch(Exception e) {
 			log.debug(e);
 		}
 		DateTime end = null;
 		try {
-			end = new DateTime(endDateTime);
+			end = DateTime.parse(endDateTime, DateTimeFormat.forPattern("MM/dd/yyyy"));
 		} catch(Exception e) {
 			log.debug(e);
 		}
 		
 		
 		for(String procedure : this.type.getProcedures()) {
-			final SOSConnector sosConnector = new SOSConnector(sosUrl, 
-					start, 
-					end, 
-					actualProperties, 
-					procedure,
-					stationId);
-			sosConnectors.add(sosConnector);
+			for (String prop : actualProperties) {
+				final SOSConnector sosConnector = new SOSConnector(sosUrl, 
+						start, 
+						end, 
+						prop, 
+						procedure,
+						stationId);
+				sosConnectors.add(sosConnector);
+			}
 		}
 		return sosConnectors;
 	}

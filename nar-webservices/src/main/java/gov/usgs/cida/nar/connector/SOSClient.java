@@ -16,6 +16,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.glassfish.jersey.client.ClientConfig;
+import org.glassfish.jersey.client.ClientProperties;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +29,8 @@ import org.slf4j.LoggerFactory;
 public class SOSClient extends Thread implements AutoCloseable {
 	
 	private static final Logger log = LoggerFactory.getLogger(SOSClient.class);
+	private static final int MAX_CONNECTIONS = 2;
+	private static int numConnections = 0;
 	
 	private File file;
 	private String sosEndpoint;
@@ -55,7 +59,7 @@ public class SOSClient extends Thread implements AutoCloseable {
 	
 	@Override
 	public void close() {
-		FileUtils.deleteQuietly(file);
+		//FileUtils.deleteQuietly(file);
 	}
 	
 	public InputStream readFile() {
@@ -69,22 +73,35 @@ public class SOSClient extends Thread implements AutoCloseable {
 	}
 
 	private void fetchData() {
+		ClientConfig clientConfig = new ClientConfig();
+		clientConfig.property(ClientProperties.CONNECT_TIMEOUT, 10000);
+		clientConfig.property(ClientProperties.READ_TIMEOUT, 60000);
 		Client client = ClientBuilder.newClient();
 		// TODO do this proper
-		Response response = client.target(this.sosEndpoint)
-				.path("")
-				.request(new MediaType[]{MediaType.APPLICATION_XML_TYPE})
-				.post(buildGetObservationRequest(startTime, endTime, observedProperties, procedures, featuresOfInterest));
 		
 		OutputStream os = null;
 		InputStream returnStream = null;
 		try {
+			while (numConnections >= MAX_CONNECTIONS) {
+				try {
+					sleep(250);
+				}
+				catch (InterruptedException ex) {
+					log.debug("interrupted", ex);
+				}
+			}
+			numConnections++;
+			Response response = client.target(this.sosEndpoint)
+				.path("")
+				.request(new MediaType[]{MediaType.APPLICATION_XML_TYPE})
+				.post(buildGetObservationRequest(startTime, endTime, observedProperties, procedures, featuresOfInterest));
 			returnStream = response.readEntity(InputStream.class);
 			os = new FileOutputStream(this.file);
 			IOUtils.copy(returnStream, os);
 		} catch (IOException ex) {
-			log.error("Unable to create temporary file", ex);
+			log.error("Unable to get data from service", ex);
 		} finally {
+			numConnections--;
 			IOUtils.closeQuietly(returnStream);
 			IOUtils.closeQuietly(os);
 		}
