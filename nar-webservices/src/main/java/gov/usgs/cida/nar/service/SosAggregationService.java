@@ -2,11 +2,13 @@ package gov.usgs.cida.nar.service;
 
 import gov.usgs.cida.nar.connector.SOSConnector;
 import gov.usgs.cida.nude.column.ColumnGrouping;
+import gov.usgs.cida.nude.connector.IConnector;
 import gov.usgs.cida.nude.out.Dispatcher;
 import gov.usgs.cida.nude.out.StreamResponse;
 import gov.usgs.cida.nude.out.TableResponse;
 import gov.usgs.cida.nude.plan.Plan;
 import gov.usgs.cida.nude.plan.PlanStep;
+import gov.usgs.cida.nude.resultset.inmemory.MuxResultSet;
 import gov.usgs.webservices.framework.basic.MimeType;
 
 import java.io.IOException;
@@ -20,6 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import javax.xml.stream.XMLStreamException;
+import org.apache.commons.io.IOUtils;
 
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
@@ -65,30 +68,51 @@ public class SosAggregationService {
 				startDateTime,
 				endDateTime);
 		
-		// just one for now
-		final SOSConnector sosConnector = sosConnectors.get(0);
-		
 		List<PlanStep> steps = new LinkedList<>();
 		PlanStep connectorStep;
 		connectorStep = new PlanStep() {
 			
 			@Override
 			public ResultSet runStep(ResultSet rs) {
-				while (!sosConnector.isReady()) {
-					try {
-						Thread.sleep(1000);
-					}
-					catch (InterruptedException ex) {
-						log.debug(ex);
+				//boolean areAllReady = false;
+				List<ResultSet> rsets = new ArrayList<>();
+				//while (!areAllReady) {
+//					boolean readyCheck = true;
+//					int numberReady = 0;
+				for (IConnector conn : sosConnectors) {
+
+					while (!conn.isReady()) {
+//						if (connReady) {
+//							numberReady++;
+//						}
+//						readyCheck = (readyCheck && connReady);
+					// TODO make sure isReady() will eventually be true
+						//}
+						try {
+							Thread.sleep(250);
+						}
+						catch (InterruptedException ex) {
+							log.debug(ex);
+						}
+//					areAllReady = readyCheck;
 					}
 				}
 				
-				return sosConnector.getResultSet();
+				for (IConnector conn : sosConnectors) {
+					ResultSet resultSet = conn.getResultSet();
+					rsets.add(resultSet);
+				}
+				
+				return new MuxResultSet(rsets);
 			}
 
 			@Override
 			public ColumnGrouping getExpectedColumns() {
-				return sosConnector.getExpectedColumns();
+				List<ColumnGrouping> cgs = new ArrayList<>();
+				for (IConnector conn : sosConnectors) {
+					cgs.add(conn.getExpectedColumns());
+				}
+				return ColumnGrouping.join(cgs);
 			}
 		};
 		
@@ -107,7 +131,9 @@ public class SosAggregationService {
 		if (sr != null && output != null) {
 			StreamResponse.dispatch(sr, new PrintWriter(output));
 			output.flush();
-			sosConnector.close();
+			for (SOSConnector conn : sosConnectors) {
+				IOUtils.closeQuietly(conn);
+			}
 		}
 	}
 	
@@ -147,7 +173,7 @@ public class SosAggregationService {
 					start, 
 					end, 
 					actualProperties, 
-					Arrays.asList(procedure),
+					procedure,
 					stationId);
 			sosConnectors.add(sosConnector);
 		}

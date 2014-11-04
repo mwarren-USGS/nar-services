@@ -119,4 +119,14 @@ public enum DownloadType {
 	public List<String> getProcedures() {
 		return procedures;
 	}
+	
+		
+	public static String getModTypeFromProcedure(String procedure) {
+		return procedure.substring(procedure.lastIndexOf("/") + 1);
+	}
+	
+	public static String getColumnNameFromProcedure(String procedure) {
+		String[] components = procedure.split("/");
+		return components[components.length-2];
+	}
 }

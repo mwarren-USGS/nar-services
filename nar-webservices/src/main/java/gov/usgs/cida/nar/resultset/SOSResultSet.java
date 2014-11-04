@@ -1,6 +1,7 @@
 package gov.usgs.cida.nar.resultset;
 
 import gov.usgs.cida.nar.connector.SOSConnector;
+import gov.usgs.cida.nar.service.DownloadType;
 import gov.usgs.cida.nude.column.Column;
 import gov.usgs.cida.nude.column.ColumnGrouping;
 import gov.usgs.cida.nude.resultset.inmemory.TableRow;
@@ -39,19 +40,19 @@ public class SOSResultSet extends OGCResultSet {
 			Map<Column, String> ob = new HashMap<>();
 			for (Column col : columns) {
 				String attribute = null;
-				if (col.equals(SOSConnector.SOS_DATE_COL_NAME)) {
+				if (col.equals(SOSConnector.SOS_DATE_COL)) {
 					attribute = next.time().toString();
 				}
-				if (col.equals(SOSConnector.SOS_PROCEDURE_COL_NAME)) {
-					attribute = next.metadata().procedure();
+				else if (col.equals(SOSConnector.SOS_MOD_TYPE_COL)) {
+					attribute = DownloadType.getModTypeFromProcedure(next.metadata().procedure());
 				}
-				if (col.equals(SOSConnector.SOS_CONSTITUENT_COL_NAME)) {
+				else if (col.equals(SOSConnector.SOS_CONSTITUENT_COL)) {
 					attribute = next.metadata().observedProperty();
 				}
-				if (col.equals(SOSConnector.SOS_SITE_COL_NAME)) {
+				else if (col.equals(SOSConnector.SOS_SITE_COL)) {
 					attribute = next.metadata().featureOfInterest();
 				}
-				if (col.equals(SOSConnector.SOS_VALUE_COL_NAME)) {
+				else {
 					attribute = next.value();
 				}
 				ob.put(col, attribute);
