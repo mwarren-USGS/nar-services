@@ -13,6 +13,8 @@ import gov.usgs.cida.nude.out.StreamResponse;
 import gov.usgs.cida.nude.out.TableResponse;
 import gov.usgs.cida.nude.plan.Plan;
 import gov.usgs.cida.nude.plan.PlanStep;
+import gov.usgs.cida.wfs.HttpComponentsWFSClient;
+import gov.usgs.cida.wfs.WFSClientInterface;
 import gov.usgs.webservices.framework.basic.MimeType;
 
 import org.opengis.filter.Filter;
@@ -24,12 +26,15 @@ import java.io.PrintWriter;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
 import javax.xml.stream.XMLStreamException;
 
 import org.apache.log4j.Logger;
+import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.CommonFactoryFinder;
 
 public class SiteInformationService {
@@ -150,5 +155,38 @@ public class SiteInformationService {
 		} else {
 			return null;
 		}
+	}
+	
+	public static List<String> getMrbStationIds() throws IOException {
+		return getStationIds(Arrays.asList(MRB_SITE_TYPE_VAL), null, null);
+	}
+	
+	public static List<String> getStationIds(final List<String> siteType,
+			final List<String> stationId,
+			final List<String> state) throws IOException {
+		List<String> stationIds = new ArrayList<>();
+		WFSClientInterface client = new HttpComponentsWFSClient();
+		try {
+			client.setupDatastoreFromEndpoint(JNDISingleton.getInstance().getProperty(SITE_INFO_URL_JNDI_NAME));
+		}
+		catch (IOException ex) {
+			log.error("Could not set up wfs connector", ex);
+		}
+		try {
+			SimpleFeatureCollection features = client.getFeatureCollection(SITE_LAYER_NAME, getFilter(siteType, stationId, state));
+			if(features != null) {
+				SimpleFeatureIterator iter = features.features();
+				while(iter.hasNext()) {
+					stationIds.add(iter.next().getAttribute(WFSConnector.WFS_SITE_ID_COL_NAME).toString());
+				}
+			}
+		} finally {
+			try {
+				client.close();
+			} catch (Exception e) {
+			}
+		}
+		
+		return stationIds;
 	}
 }

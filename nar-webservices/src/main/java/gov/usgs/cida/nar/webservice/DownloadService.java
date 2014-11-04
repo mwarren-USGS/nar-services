@@ -193,13 +193,21 @@ public class DownloadService {
 			final List<String> dataType,
 			final List<String> qwDataType,
 			final List<String> streamFlowType,
-			final List<String> constituent,
-			final List<String> siteType,
-			final List<String> stationId,
+			final List<String> inConstituent,
+			final List<String> inSiteType,
+			final List<String> inStationId,
 			final List<String> state,
 			final String startDateTime,
 			final String endDateTime) throws IOException {
 		zip.putNextEntry(new ZipEntry(downloadType.name() + "." + mimeType.getFileSuffix()));
+		
+		//default to "All constituents"
+		final List<String> constituent;
+		if(inConstituent == null || inConstituent.size() <= 0) {
+			constituent = CONSTITUENT_LIST;
+		} else {
+			constituent = inConstituent;
+		}
 		
 		//if the download type is for flow, do not include requested constituents
 		List<String> constituentsToUse = new ArrayList<>();
@@ -207,6 +215,12 @@ public class DownloadService {
 			constituentsToUse.add(FLOW_CONSTITUENT);
 		} else {
 			constituentsToUse.addAll(constituent);
+		}
+		
+		//if mayLoad, ALWAYS ensure MRB siteTypes
+		List<String> siteType = new ArrayList<>(inSiteType);
+		if(downloadType.equals(DownloadType.mayLoad) && !siteType.contains(SiteInformationService.MRB_SITE_TYPE_VAL)) {
+			siteType.add(SiteInformationService.MRB_SITE_TYPE_VAL);
 		}
 		
 		String headerText = null;
@@ -220,13 +234,8 @@ public class DownloadService {
 				OBSERVED_PROPERTY_PREFIX
 				).streamData(zip, 
 					mimeType,
-					dataType,
-					qwDataType,
-					streamFlowType,
 					constituentsToUse,
-					siteType,
-					stationId,
-					state,
+					SiteInformationService.getStationIds(siteType, inStationId, state),
 					startDateTime,
 					endDateTime,
 					headerText);
