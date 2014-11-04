@@ -1,19 +1,28 @@
 package gov.usgs.cida.nar.connector;
 
 import gov.usgs.cida.nar.resultset.SOSResultSet;
+import gov.usgs.cida.nar.service.ConstituentType;
+import gov.usgs.cida.nar.service.DownloadType;
 import gov.usgs.cida.nude.column.Column;
 import gov.usgs.cida.nude.column.ColumnGrouping;
 import gov.usgs.cida.nude.column.SimpleColumn;
 import gov.usgs.cida.nude.connector.IConnector;
 import gov.usgs.cida.nude.connector.parser.IParser;
+import gov.usgs.cida.nude.filter.ColumnTransform;
+import gov.usgs.cida.nude.filter.FilterStage;
+import gov.usgs.cida.nude.filter.FilterStageBuilder;
+import gov.usgs.cida.nude.filter.FilteredResultSet;
 import gov.usgs.cida.nude.resultset.inmemory.StringTableResultSet;
+import gov.usgs.cida.nude.resultset.inmemory.TableRow;
 import gov.usgs.cida.sos.WaterML2Parser;
+import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.sql.ResultSet;
-import java.util.Date;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import javax.xml.stream.XMLStreamException;
+import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,15 +33,17 @@ import org.slf4j.LoggerFactory;
  *
  * @author Jordan Walker <jiwalker@usgs.gov>
  */
-public class SOSConnector implements IConnector {
+public class SOSConnector implements IConnector, Closeable {
 	
 	private static final Logger log = LoggerFactory.getLogger(SOSConnector.class);
 
-	public static final Column SOS_DATE_COL_NAME = new SimpleColumn("DATE");
-	public static final Column SOS_PROCEDURE_COL_NAME = new SimpleColumn("PROCEDURE");
-	public static final Column SOS_CONSTITUENT_COL_NAME = new SimpleColumn("CONSTIT");
-	public static final Column SOS_SITE_COL_NAME = new SimpleColumn("SITE_QW_ID");
-	public static final Column SOS_VALUE_COL_NAME = new SimpleColumn("VALUE");
+	public static final Column COMPOSITE_KEY_COL = new SimpleColumn("COMPOSITE");
+	public static final Column SOS_SITE_COL = new SimpleColumn("SITE_QW_ID");
+	public static final Column SOS_CONSTITUENT_COL = new SimpleColumn("CONSTIT");
+	public static final Column SOS_MOD_TYPE_COL = new SimpleColumn("MODTYPE");
+	public static final Column SOS_DATE_COL = new SimpleColumn("DATE");
+	
+	private static final String NUMERIC_SUFFIX = "_NUMERIC";
 	
 	private SOSClient client;
 	private ColumnGrouping cg;
@@ -40,24 +51,30 @@ public class SOSConnector implements IConnector {
 	private DateTime startTime;
 	private DateTime endTime;
 	private List<String> observedProperties;
-	private List<String> procedures;
+	private String procedure;
 	private List<String> featuresOfInterest;
 
+	private String modType;
+	private String valueColumn;
+	
 	private boolean isReady;
 
 
 	public SOSConnector(String sosEndpoint, DateTime startTime, DateTime endTime, List<String> observedProperties,
-			List<String> procedures, List<String> featuresOfInterest) {
+			String procedure, List<String> featuresOfInterest) {
 		this.sosEndpoint = sosEndpoint;
 		this.startTime = startTime;
 		this.endTime = endTime;
 		this.observedProperties = observedProperties;
-		this.procedures = procedures;
+		this.procedure = procedure;
 		this.featuresOfInterest = featuresOfInterest;
 		this.isReady = false;
 		
-		this.client = new SOSClient(sosEndpoint, startTime, endTime, observedProperties, procedures, featuresOfInterest);
-		this.cg = makeColumnGrouping();
+		this.modType = DownloadType.getModTypeFromProcedure(procedure);
+		this.valueColumn = DownloadType.getColumnNameFromProcedure(procedure);
+		
+		this.client = new SOSClient(sosEndpoint, startTime, endTime, observedProperties, Arrays.asList(procedure), featuresOfInterest);
+		this.cg = makeColumnGrouping(valueColumn);
 	}
 
 	@Override
@@ -85,7 +102,60 @@ public class SOSConnector implements IConnector {
 			resultSet = new StringTableResultSet(getExpectedColumns());
 		}
 		
-		return resultSet;
+		FilterStage makeNumericColumnsStage = new FilterStageBuilder(getExpectedColumns())
+				.addTransform(new SimpleColumn(SOS_SITE_COL.getName() + NUMERIC_SUFFIX), new ColumnTransform() {
+					@Override
+					public String transform(TableRow row) {
+						String value = row.getValue(SOS_SITE_COL);
+						int orderedVal = value.length() * Integer.parseInt(value);
+						return "" + orderedVal;
+					}
+				})
+				.addTransform(new SimpleColumn(SOS_CONSTITUENT_COL.getName() + NUMERIC_SUFFIX), new ColumnTransform() {
+					@Override
+					public String transform(TableRow row) {
+						String value = row.getValue(SOS_CONSTITUENT_COL);
+						String orderedVal = "" + Math.abs(value.hashCode());
+						return StringUtils.leftPad(orderedVal.substring(0, 4), 4, "0");
+					}
+				})
+				.addTransform(new SimpleColumn(SOS_MOD_TYPE_COL.getName() + NUMERIC_SUFFIX), new ColumnTransform() {
+					@Override
+					public String transform(TableRow row) {
+						String value = row.getValue(SOS_MOD_TYPE_COL);
+						String orderedVal = "" + Math.abs(value.hashCode());
+						return StringUtils.leftPad(orderedVal.substring(0, 4), 4, "0");
+					}
+				})
+				.addTransform(new SimpleColumn(SOS_DATE_COL.getName() + NUMERIC_SUFFIX), new ColumnTransform() {
+					@Override
+					public String transform(TableRow row) {
+						String value = row.getValue(SOS_DATE_COL);
+						DateTime parsed = DateTime.parse(value);
+						int padTo = String.valueOf(DateTime.now().getMillis()).length();
+						return StringUtils.leftPad(String.valueOf(parsed.getMillis()), padTo, "0");
+					}
+				})
+				.buildFilterStage();
+		ResultSet numericColumnResultSet = new FilteredResultSet(resultSet, makeNumericColumnsStage);
+		
+		FilterStage makePrimaryKeyStage = new FilterStageBuilder(makeNumericColumnsStage.getOutputColumns())
+				.addTransform(COMPOSITE_KEY_COL, new ColumnTransform() {
+					@Override
+					public String transform(TableRow row) {
+						String siteVal = row.getValue(new SimpleColumn(SOS_SITE_COL.getName() + NUMERIC_SUFFIX));
+						String constituentVal = row.getValue(new SimpleColumn(SOS_CONSTITUENT_COL.getName() + NUMERIC_SUFFIX));
+						String modtypeVal = row.getValue(new SimpleColumn(SOS_MOD_TYPE_COL.getName() + NUMERIC_SUFFIX));
+						String dateVal = row.getValue(new SimpleColumn(SOS_DATE_COL.getName() + NUMERIC_SUFFIX));
+						String compositeVal = siteVal + constituentVal + modtypeVal + dateVal;
+						return compositeVal;
+					}
+				})
+				.buildFilterStage();
+		
+		ResultSet numericPrimaryKeyResultSet = new FilteredResultSet(numericColumnResultSet, makePrimaryKeyStage);
+		
+		return numericPrimaryKeyResultSet;
 	}
 
 	@Override
@@ -114,17 +184,19 @@ public class SOSConnector implements IConnector {
 		return this.cg;
 	}
 	
-	private static ColumnGrouping makeColumnGrouping() {
-		Column primaryKey = SOS_DATE_COL_NAME;
+	private static ColumnGrouping makeColumnGrouping(String valueColumn) {
+		Column primaryKey = COMPOSITE_KEY_COL;
 		List<Column> allColumns = new LinkedList<>();
 		allColumns.add(primaryKey);
-		allColumns.add(SOS_PROCEDURE_COL_NAME);
-		allColumns.add(SOS_CONSTITUENT_COL_NAME);
-		allColumns.add(SOS_SITE_COL_NAME);
-		allColumns.add(SOS_VALUE_COL_NAME);
+		allColumns.add(SOS_SITE_COL);
+		allColumns.add(SOS_CONSTITUENT_COL);
+		allColumns.add(SOS_MOD_TYPE_COL);
+		allColumns.add(SOS_DATE_COL);
+		allColumns.add(new SimpleColumn(valueColumn));
 		return new ColumnGrouping(primaryKey, allColumns);
 	}
 	
+	@Override
 	public void close() {
 		client.close();
 	}

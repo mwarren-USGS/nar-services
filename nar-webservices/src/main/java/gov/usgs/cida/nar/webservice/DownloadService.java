@@ -61,7 +61,7 @@ public class DownloadService {
 		
 		//default to "All constituents"
 		final List<String> constituent;
-		if(inConstituent == null || inConstituent.size() > 0) {
+		if(inConstituent == null || inConstituent.size() <= 0) {
 			constituent = CONSTITUENT_LIST;
 		} else {
 			constituent = inConstituent;
@@ -247,8 +247,8 @@ public class DownloadService {
 	private void addRequestSummaryEntry(ZipOutputStream zip, String requestDescription) throws IOException {
 		zip.putNextEntry(new ZipEntry("request.txt"));
 		zip.write(requestDescription.getBytes("UTF-8"));
-		zip.flush();
 		zip.closeEntry();
+		zip.flush();
 	}
 	
 	private String buildRequestDescriptionFromParams(
