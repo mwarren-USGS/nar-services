@@ -47,7 +47,7 @@ public class SiteInformationService {
 	public static final String MS_SITE_VAL = "MS";
 	
 	private static final String SITE_INFO_URL_JNDI_NAME = "nar.endpoint.ows";
-	private static final String SITE_LAYER_NAME = "NAR:JD_NFSN_sites0914";
+	private static final String SITE_LAYER_JNDI_NAME = "nar.ows.sitelayer";
 	
 	public void streamData(OutputStream output, 
 			final MimeType mimeType,
@@ -56,8 +56,9 @@ public class SiteInformationService {
 			final List<String> state) throws IOException {
 		
 		String wfsUrl = JNDISingleton.getInstance().getProperty(SITE_INFO_URL_JNDI_NAME);
+		String siteLayerName = JNDISingleton.getInstance().getProperty(SITE_LAYER_JNDI_NAME);
 		
-		final WFSConnector wfsConnector = new WFSConnector(wfsUrl, SITE_LAYER_NAME, getFilter(siteType, stationId, state));
+		final WFSConnector wfsConnector = new WFSConnector(wfsUrl, siteLayerName, getFilter(siteType, stationId, state));
 		
 		List<PlanStep> steps = new LinkedList<>();
 		PlanStep connectorStep = new PlanStep() {
@@ -173,7 +174,9 @@ public class SiteInformationService {
 			log.error("Could not set up wfs connector", ex);
 		}
 		try {
-			SimpleFeatureCollection features = client.getFeatureCollection(SITE_LAYER_NAME, getFilter(siteType, stationId, state));
+			SimpleFeatureCollection features = client.getFeatureCollection(
+					JNDISingleton.getInstance().getProperty(SITE_LAYER_JNDI_NAME), 
+					getFilter(siteType, stationId, state));
 			if(features != null) {
 				SimpleFeatureIterator iter = features.features();
 				while(iter.hasNext()) {
