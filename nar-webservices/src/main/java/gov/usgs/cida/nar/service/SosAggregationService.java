@@ -1,5 +1,6 @@
 package gov.usgs.cida.nar.service;
 
+import gov.usgs.cida.nar.connector.SOSClient;
 import gov.usgs.cida.nar.connector.SOSConnector;
 import gov.usgs.cida.nude.column.ColumnGrouping;
 import gov.usgs.cida.nude.connector.IConnector;
@@ -17,6 +18,7 @@ import java.io.PrintWriter;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -163,16 +165,15 @@ public class SosAggregationService {
 			log.debug(e);
 		}
 		
-		
+		SOSClient sosClient = new SOSClient(sosUrl, start, end, actualProperties, this.type.getProcedures(), stationId);
 		for(String procedure : this.type.getProcedures()) {
 			for (String prop : actualProperties) {
-				final SOSConnector sosConnector = new SOSConnector(sosUrl, 
-						start, 
-						end, 
-						prop, 
-						procedure,
-						stationId);
-				sosConnectors.add(sosConnector);
+				for (String featureOfInterest : stationId) {
+					final SOSConnector sosConnector = new SOSConnector(sosClient, prop, 
+							procedure,
+							featureOfInterest);
+					sosConnectors.add(sosConnector);
+				}
 			}
 		}
 		return sosConnectors;

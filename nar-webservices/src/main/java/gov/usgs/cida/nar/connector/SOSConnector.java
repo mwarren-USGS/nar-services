@@ -13,6 +13,7 @@ import gov.usgs.cida.nude.filter.FilterStageBuilder;
 import gov.usgs.cida.nude.filter.FilteredResultSet;
 import gov.usgs.cida.nude.resultset.inmemory.StringTableResultSet;
 import gov.usgs.cida.nude.resultset.inmemory.TableRow;
+import gov.usgs.cida.sos.FilteredObservationCollection;
 import gov.usgs.cida.sos.WaterML2Parser;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
@@ -36,7 +37,7 @@ public class SOSConnector implements IConnector, Closeable {
 	
 	private static final Logger log = LoggerFactory.getLogger(SOSConnector.class);
 
-	public static final Column COMPOSITE_KEY_COL = new SimpleColumn("COMPOSITE", true);
+	public static final Column COMPOSITE_KEY_COL = new SimpleColumn("COMPOSITE", false);
 	public static final Column SOS_SITE_COL = new SimpleColumn("SITE_QW_ID");
 	public static final Column SOS_CONSTITUENT_COL = new SimpleColumn("CONSTIT");
 	public static final Column SOS_MOD_TYPE_COL = new SimpleColumn("MODTYPE");
@@ -46,12 +47,9 @@ public class SOSConnector implements IConnector, Closeable {
 	
 	private SOSClient client;
 	private ColumnGrouping cg;
-	private String sosEndpoint;
-	private DateTime startTime;
-	private DateTime endTime;
 	private String observedProperty;
 	private String procedure;
-	private List<String> featuresOfInterest;
+	private String featureOfInterest;
 
 	private String modType;
 	private String valueColumn;
@@ -59,20 +57,16 @@ public class SOSConnector implements IConnector, Closeable {
 	private boolean isReady;
 
 
-	public SOSConnector(String sosEndpoint, DateTime startTime, DateTime endTime, String observedProperty,
-			String procedure, List<String> featuresOfInterest) {
-		this.sosEndpoint = sosEndpoint;
-		this.startTime = startTime;
-		this.endTime = endTime;
+	public SOSConnector(SOSClient client, String observedProperty, String procedure, String featureOfInterest) {
+		this.client = client;
 		this.observedProperty = observedProperty;
 		this.procedure = procedure;
-		this.featuresOfInterest = featuresOfInterest;
+		this.featureOfInterest = featureOfInterest;
 		this.isReady = false;
 		
 		this.modType = DownloadType.getModTypeFromProcedure(procedure);
 		this.valueColumn = DownloadType.getColumnNameFromProcedure(procedure);
 		
-		this.client = new SOSClient(sosEndpoint, startTime, endTime, Arrays.asList(observedProperty), Arrays.asList(procedure), featuresOfInterest);
 		this.cg = makeColumnGrouping(valueColumn);
 	}
 
@@ -95,8 +89,9 @@ public class SOSConnector implements IConnector, Closeable {
 		}
 		WaterML2Parser parser = new WaterML2Parser(this.client.readFile());
 		try {
-			resultSet = new SOSResultSet(parser.getObservations(), this.cg);
-		} catch (FileNotFoundException | XMLStreamException ex) {
+			FilteredObservationCollection filteredObservations = parser.getFilteredObservations(procedure, observedProperty, featureOfInterest);
+			resultSet = new SOSResultSet(filteredObservations, this.cg);
+		} catch (XMLStreamException ex) {
 			log.error("Cannot read stream", ex);
 			resultSet = new StringTableResultSet(getExpectedColumns());
 		}

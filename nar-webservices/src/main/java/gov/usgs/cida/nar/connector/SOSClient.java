@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 public class SOSClient extends Thread implements AutoCloseable {
 	
 	private static final Logger log = LoggerFactory.getLogger(SOSClient.class);
-	private static final int MAX_CONNECTIONS = 2;
+	private static final int MAX_CONNECTIONS = 4;
 	private static int numConnections = 0;
 	
 	private File file;
@@ -39,6 +39,7 @@ public class SOSClient extends Thread implements AutoCloseable {
 	private List<String> observedProperties;
 	private List<String> procedures;
 	private List<String> featuresOfInterest;
+	private boolean fetched = false;
 
 	public SOSClient(String sosEndpoint, DateTime startTime, DateTime endTime, List<String> observedProperties,
 			List<String> procedures, List<String> featuresOfInterest) {
@@ -72,7 +73,10 @@ public class SOSClient extends Thread implements AutoCloseable {
 		return fileInput;
 	}
 
-	private void fetchData() {
+	private synchronized void fetchData() {
+		if (fetched) {
+			return;
+		}
 		ClientConfig clientConfig = new ClientConfig();
 		clientConfig.property(ClientProperties.CONNECT_TIMEOUT, 10000);
 		clientConfig.property(ClientProperties.READ_TIMEOUT, 60000);
@@ -104,6 +108,7 @@ public class SOSClient extends Thread implements AutoCloseable {
 			numConnections--;
 			IOUtils.closeQuietly(returnStream);
 			IOUtils.closeQuietly(os);
+			fetched = true;
 		}
 	}
 	

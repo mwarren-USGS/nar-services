@@ -1,6 +1,5 @@
 package gov.usgs.cida.sos;
 
-import gov.usgs.cida.nude.column.ColumnGrouping;
 import org.joda.time.DateTime;
 
 /**
