@@ -44,13 +44,8 @@ public class SosAggregationService {
 	
 	public void streamData(OutputStream output,
 			final MimeType mimeType,
-			final List<String> dataType,
-			final List<String> qwDataType,
-			final List<String> streamFlowType,
 			final List<String> constituent,
-			final List<String> siteType,
 			final List<String> stationId,
-			final List<String> state,
 			final String startDateTime,
 			final String endDateTime,
 			final String header) throws IOException {
@@ -58,13 +53,8 @@ public class SosAggregationService {
 		
 		final List<SOSConnector> sosConnectors = getSosConnectors(
 				sosUrl,
-				dataType,
-				qwDataType,
-				streamFlowType,
 				constituent,
-				siteType,
 				stationId,
-				state,
 				startDateTime,
 				endDateTime);
 		
@@ -138,13 +128,8 @@ public class SosAggregationService {
 	}
 	
 	public List<SOSConnector> getSosConnectors(final String sosUrl,
-			final List<String> dataType,
-			final List<String> qwDataType,
-			final List<String> streamFlowType,
 			final List<String> constituent,
-			final List<String> siteType,
 			final List<String> stationId,
-			final List<String> state,
 			final String startDateTime,
 			final String endDateTime) {
 		List<SOSConnector> sosConnectors = new ArrayList<>();

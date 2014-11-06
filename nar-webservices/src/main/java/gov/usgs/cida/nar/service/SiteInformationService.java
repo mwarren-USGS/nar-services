@@ -13,6 +13,8 @@ import gov.usgs.cida.nude.out.StreamResponse;
 import gov.usgs.cida.nude.out.TableResponse;
 import gov.usgs.cida.nude.plan.Plan;
 import gov.usgs.cida.nude.plan.PlanStep;
+import gov.usgs.cida.wfs.HttpComponentsWFSClient;
+import gov.usgs.cida.wfs.WFSClientInterface;
 import gov.usgs.webservices.framework.basic.MimeType;
 
 import org.opengis.filter.Filter;
@@ -24,12 +26,15 @@ import java.io.PrintWriter;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
 import javax.xml.stream.XMLStreamException;
 
 import org.apache.log4j.Logger;
+import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.CommonFactoryFinder;
 
 public class SiteInformationService {
@@ -38,9 +43,11 @@ public class SiteInformationService {
 	
 	public static final String SITE_ATTRIBUTE_TITLE = DownloadType.siteAttribute.getTitle();
 	public static final String SITE_ATTRIBUTE_OUT_FILENAME = SITE_ATTRIBUTE_TITLE.replaceAll(" ", "_");
+	public static final String MRB_SITE_TYPE_VAL = "MRB";
+	public static final String MS_SITE_VAL = "MS";
 	
 	private static final String SITE_INFO_URL_JNDI_NAME = "nar.endpoint.ows";
-	private static final String SITE_LAYER_NAME = "NAR:JD_NFSN_sites0914";
+	private static final String SITE_LAYER_JNDI_NAME = "nar.ows.sitelayer";
 	
 	public void streamData(OutputStream output, 
 			final MimeType mimeType,
@@ -49,8 +56,9 @@ public class SiteInformationService {
 			final List<String> state) throws IOException {
 		
 		String wfsUrl = JNDISingleton.getInstance().getProperty(SITE_INFO_URL_JNDI_NAME);
+		String siteLayerName = JNDISingleton.getInstance().getProperty(SITE_LAYER_JNDI_NAME);
 		
-		final WFSConnector wfsConnector = new WFSConnector(wfsUrl, SITE_LAYER_NAME, getFilter(siteType, stationId, state));
+		final WFSConnector wfsConnector = new WFSConnector(wfsUrl, siteLayerName, getFilter(siteType, stationId, state));
 		
 		List<PlanStep> steps = new LinkedList<>();
 		PlanStep connectorStep = new PlanStep() {
@@ -107,7 +115,10 @@ public class SiteInformationService {
 			for(String sid : stationId) {
 				stationIdFilters.add(ff.equals(ff.property(WFSConnector.WFS_SITE_ID_COL_NAME), ff.literal(sid)));
 			}
-			filters.add(ff.or(stationIdFilters));
+
+			if(stationIdFilters.size() > 0) {
+				filters.add(ff.or(stationIdFilters));
+			}
 		}
 		
 		if(state != null && state.size() > 0) {
@@ -115,17 +126,29 @@ public class SiteInformationService {
 			for(String st : state) {
 				stateFilters.add(ff.equals(ff.property(WFSConnector.WFS_STATE_COL_NAME), ff.literal(st)));
 			}
-			filters.add(ff.or(stateFilters));
+			if(stateFilters.size() > 0) {
+				filters.add(ff.or(stateFilters));
+			}
 		}
 		
 
+		boolean mrbSiteTypeRequested = false; //add a filter if this is true
 		if(siteType != null && siteType.size() > 0) {
-			//TODO ingore siteType == MRB and add MRB sites to station id filter
 			List<Filter> siteTypeFilters = new ArrayList<>();
 			for(String st : siteType) {
-				siteTypeFilters.add(ff.equals(ff.property(WFSConnector.WFS_SITE_TYPE_COL_NAME), ff.literal(st)));
+				if(st.equals(MRB_SITE_TYPE_VAL)) { //MRB isn't really a site type, it's a UI flag, create a different filter
+					mrbSiteTypeRequested = true;
+				} else {
+					siteTypeFilters.add(ff.equals(ff.property(WFSConnector.WFS_SITE_TYPE_COL_NAME), ff.literal(st)));
+				}
 			}
-			filters.add(ff.or(siteTypeFilters));
+			if(siteTypeFilters.size() > 0) {
+				filters.add(ff.or(siteTypeFilters));
+			}
+		}
+		
+		if(mrbSiteTypeRequested) {
+			filters.add(ff.equals(ff.property(WFSConnector.WFS_MS_SITE_COL_NAME), ff.literal(MS_SITE_VAL)));
 		}
 		
 		if(filters.size() > 0) {
@@ -133,5 +156,40 @@ public class SiteInformationService {
 		} else {
 			return null;
 		}
+	}
+	
+	public static List<String> getMrbStationIds() throws IOException {
+		return getStationIds(Arrays.asList(MRB_SITE_TYPE_VAL), null, null);
+	}
+	
+	public static List<String> getStationIds(final List<String> siteType,
+			final List<String> stationId,
+			final List<String> state) throws IOException {
+		List<String> stationIds = new ArrayList<>();
+		WFSClientInterface client = new HttpComponentsWFSClient();
+		try {
+			client.setupDatastoreFromEndpoint(JNDISingleton.getInstance().getProperty(SITE_INFO_URL_JNDI_NAME));
+		}
+		catch (IOException ex) {
+			log.error("Could not set up wfs connector", ex);
+		}
+		try {
+			SimpleFeatureCollection features = client.getFeatureCollection(
+					JNDISingleton.getInstance().getProperty(SITE_LAYER_JNDI_NAME), 
+					getFilter(siteType, stationId, state));
+			if(features != null) {
+				SimpleFeatureIterator iter = features.features();
+				while(iter.hasNext()) {
+					stationIds.add(iter.next().getAttribute(WFSConnector.WFS_SITE_ID_COL_NAME).toString());
+				}
+			}
+		} finally {
+			try {
+				client.close();
+			} catch (Exception e) {
+			}
+		}
+		
+		return stationIds;
 	}
 }
