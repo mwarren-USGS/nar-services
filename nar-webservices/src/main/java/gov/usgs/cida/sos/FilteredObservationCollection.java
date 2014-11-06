@@ -8,16 +8,11 @@ import javax.xml.stream.XMLStreamReader;
  */
 public class FilteredObservationCollection extends ObservationCollection {
 	
-	private final String procedure;
-	private final String observedProperty;
-	private final String featureOfInterest;
+	private final OrderedFilter filter;
 
-	public FilteredObservationCollection(XMLStreamReader reader, String procedure,
-			String observedProperty, String featureOfInterest) {
+	public FilteredObservationCollection(XMLStreamReader reader, OrderedFilter filter) {
 		super(reader);
-		this.procedure = procedure;
-		this.observedProperty = observedProperty;
-		this.featureOfInterest = featureOfInterest;
+		this.filter = filter;
 	}
 
 	@Override
@@ -42,13 +37,13 @@ public class FilteredObservationCollection extends ObservationCollection {
 	private boolean filter() {
 		boolean allEqual = true;
 		if (currentObservation.metadata() != null) {
-			if (this.procedure != null && !this.procedure.equals(currentObservation.metadata().procedure())) {
+			if (this.filter.procedure != null && !this.filter.procedure.equals(currentObservation.metadata().procedure())) {
 				allEqual = false;
 			}
-			if (this.observedProperty != null && !this.observedProperty.equals(currentObservation.metadata().observedProperty())) {
+			if (this.filter.observedProperty != null && !this.filter.observedProperty.equals(currentObservation.metadata().observedProperty())) {
 				allEqual = false;
 			}
-			if (this.featureOfInterest != null && !this.featureOfInterest.equals(currentObservation.metadata().featureOfInterest())) {
+			if (this.filter.featureOfInterest != null && !this.filter.featureOfInterest.equals(currentObservation.metadata().featureOfInterest())) {
 				allEqual = false;
 			}
 		}

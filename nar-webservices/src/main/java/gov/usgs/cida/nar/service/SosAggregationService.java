@@ -10,6 +10,7 @@ import gov.usgs.cida.nude.out.TableResponse;
 import gov.usgs.cida.nude.plan.Plan;
 import gov.usgs.cida.nude.plan.PlanStep;
 import gov.usgs.cida.nude.resultset.inmemory.MuxResultSet;
+import gov.usgs.cida.sos.OrderedFilter;
 import gov.usgs.webservices.framework.basic.MimeType;
 
 import java.io.IOException;
@@ -18,9 +19,12 @@ import java.io.PrintWriter;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import javax.xml.stream.XMLStreamException;
 import org.apache.commons.io.IOUtils;
@@ -165,16 +169,33 @@ public class SosAggregationService {
 			log.debug(e);
 		}
 		
-		SOSClient sosClient = new SOSClient(sosUrl, start, end, actualProperties, this.type.getProcedures(), stationId);
+		Map<String, List<String>> columnMap = new HashMap<>();
+		
 		for(String procedure : this.type.getProcedures()) {
-			for (String prop : actualProperties) {
-				for (String featureOfInterest : stationId) {
-					final SOSConnector sosConnector = new SOSConnector(sosClient, prop, 
-							procedure,
-							featureOfInterest);
-					sosConnectors.add(sosConnector);
+			String columnName = DownloadType.getColumnNameFromProcedure(procedure);
+			if (columnMap.containsKey(columnName)) {
+				List<String> procList = columnMap.get(columnName);
+				procList.add(procedure);
+			} else {
+				List<String> procList = new LinkedList<>();
+				procList.add(procedure);
+				columnMap.put(columnName, procList);
+			}
+		}
+		
+		for (String columnName : columnMap.keySet()) {
+			List<String> procList = columnMap.get(columnName);
+			SortedSet<OrderedFilter> filters = new TreeSet<>();
+			SOSClient sosClient = new SOSClient(sosUrl, start, end, actualProperties, procList, stationId);
+			for (String procedure : procList) {
+				for (String prop : actualProperties) {
+					for (String featureOfInterest : stationId) {
+						filters.add(new OrderedFilter(procedure, prop, featureOfInterest));
+					}
 				}
 			}
+			final SOSConnector sosConnector = new SOSConnector(sosClient, filters, columnName);
+			sosConnectors.add(sosConnector);
 		}
 		return sosConnectors;
 	}

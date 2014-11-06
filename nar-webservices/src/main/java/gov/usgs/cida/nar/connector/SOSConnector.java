@@ -13,14 +13,14 @@ import gov.usgs.cida.nude.filter.FilterStageBuilder;
 import gov.usgs.cida.nude.filter.FilteredResultSet;
 import gov.usgs.cida.nude.resultset.inmemory.StringTableResultSet;
 import gov.usgs.cida.nude.resultset.inmemory.TableRow;
-import gov.usgs.cida.sos.FilteredObservationCollection;
+import gov.usgs.cida.sos.ObservationCollection;
+import gov.usgs.cida.sos.OrderedFilter;
 import gov.usgs.cida.sos.WaterML2Parser;
 import java.io.Closeable;
-import java.io.FileNotFoundException;
 import java.sql.ResultSet;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.SortedSet;
 import javax.xml.stream.XMLStreamException;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
@@ -47,25 +47,15 @@ public class SOSConnector implements IConnector, Closeable {
 	
 	private SOSClient client;
 	private ColumnGrouping cg;
-	private String observedProperty;
-	private String procedure;
-	private String featureOfInterest;
-
-	private String modType;
-	private String valueColumn;
+	private SortedSet<OrderedFilter> filters;
 	
 	private boolean isReady;
 
 
-	public SOSConnector(SOSClient client, String observedProperty, String procedure, String featureOfInterest) {
+	public SOSConnector(SOSClient client, SortedSet<OrderedFilter> filters, String valueColumn) {
 		this.client = client;
-		this.observedProperty = observedProperty;
-		this.procedure = procedure;
-		this.featureOfInterest = featureOfInterest;
+		this.filters = filters;
 		this.isReady = false;
-		
-		this.modType = DownloadType.getModTypeFromProcedure(procedure);
-		this.valueColumn = DownloadType.getColumnNameFromProcedure(procedure);
 		
 		this.cg = makeColumnGrouping(valueColumn);
 	}
@@ -87,14 +77,7 @@ public class SOSConnector implements IConnector, Closeable {
 		if (!isReady()) {
 			throw new RuntimeException("Not ready yet");
 		}
-		WaterML2Parser parser = new WaterML2Parser(this.client.readFile());
-		try {
-			FilteredObservationCollection filteredObservations = parser.getFilteredObservations(procedure, observedProperty, featureOfInterest);
-			resultSet = new SOSResultSet(filteredObservations, this.cg);
-		} catch (XMLStreamException ex) {
-			log.error("Cannot read stream", ex);
-			resultSet = new StringTableResultSet(getExpectedColumns());
-		}
+		resultSet = new SOSResultSet(this.filters, this.client, this.cg);
 		
 		FilterStage makeNumericColumnsStage = new FilterStageBuilder(getExpectedColumns())
 				.addTransform(new SimpleColumn(SOS_SITE_COL.getName() + NUMERIC_SUFFIX, false), new ColumnTransform() {

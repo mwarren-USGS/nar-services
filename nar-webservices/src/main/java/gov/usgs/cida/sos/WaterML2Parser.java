@@ -26,10 +26,10 @@ public class WaterML2Parser {
 		return observationCollection;
 	}
 	
-	public FilteredObservationCollection getFilteredObservations(String procedure, String observedProperty, String featureOfInterest) throws XMLStreamException {
+	public FilteredObservationCollection getFilteredObservations(OrderedFilter filter) throws XMLStreamException {
 		InputStreamReader reader = new InputStreamReader(observationResults);
 		XMLStreamReader xmlReader = XMLInputFactory.newInstance().createXMLStreamReader(reader);
-		FilteredObservationCollection observationCollection = new FilteredObservationCollection(xmlReader, procedure, observedProperty, featureOfInterest);
+		FilteredObservationCollection observationCollection = new FilteredObservationCollection(xmlReader, filter);
 		return observationCollection;
 	}
 	

@@ -1,15 +1,8 @@
 package gov.usgs.cida.nar.resultset;
 
-import gov.usgs.cida.nude.column.Column;
 import gov.usgs.cida.nude.resultset.inmemory.PeekingResultSet;
 import gov.usgs.cida.nude.resultset.inmemory.TableRow;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import org.opengis.feature.simple.SimpleFeature;
-
-import static gov.usgs.cida.nar.resultset.WFSResultSet.FID_NAME;
 
 /**
  *

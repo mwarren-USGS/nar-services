@@ -60,7 +60,7 @@ public class SOSClient extends Thread implements AutoCloseable {
 	
 	@Override
 	public void close() {
-		//FileUtils.deleteQuietly(file);
+		FileUtils.deleteQuietly(file);
 	}
 	
 	public InputStream readFile() {
