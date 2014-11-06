@@ -26,4 +26,5 @@
     </root>
     
     <logger name="org.apache.http.wire" level="DEBUG" />
+	<logger name="gov.usgs.cida.nude.resultset.inmemory" level="ERROR" />
 </configuration>

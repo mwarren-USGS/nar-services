@@ -80,7 +80,7 @@ public class SOSClient extends Thread implements AutoCloseable {
 		ClientConfig clientConfig = new ClientConfig();
 		clientConfig.property(ClientProperties.CONNECT_TIMEOUT, 10000);
 		clientConfig.property(ClientProperties.READ_TIMEOUT, 60000);
-		Client client = ClientBuilder.newClient();
+		Client client = ClientBuilder.newClient(clientConfig);
 		// TODO do this proper
 		
 		OutputStream os = null;

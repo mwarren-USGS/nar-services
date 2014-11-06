@@ -10,11 +10,11 @@ import gov.usgs.cida.sos.Observation;
 import gov.usgs.cida.sos.ObservationCollection;
 import gov.usgs.cida.sos.OrderedFilter;
 import gov.usgs.cida.sos.WaterML2Parser;
+import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedSet;
-import java.util.logging.Level;
 import javax.xml.stream.XMLStreamException;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -31,6 +31,7 @@ public class SOSResultSet extends OGCResultSet {
 	private SortedSet<OrderedFilter> filters;
 	private SOSClient client;
 	private ObservationCollection currentCollection;
+	private InputStream sourceStream;
 
 	public SOSResultSet(SortedSet<OrderedFilter> filters, SOSClient client, ColumnGrouping colGroups) {
 		this.filters = filters;
@@ -41,12 +42,14 @@ public class SOSResultSet extends OGCResultSet {
 	@Override
 	public void close() throws SQLException {
 		IOUtils.closeQuietly(currentCollection);
+		IOUtils.closeQuietly(sourceStream);
 		super.close();
 	}
 	
 	private ObservationCollection nextCollection() throws XMLStreamException {
 		ObservationCollection collection = null;
-		WaterML2Parser parser = new WaterML2Parser(this.client.readFile());
+		sourceStream = this.client.readFile();
+		WaterML2Parser parser = new WaterML2Parser(sourceStream);
 		// I should have made this a Queue, but I'll fake it.
 		if (filters.size() > 0) {
 			OrderedFilter first = filters.first();
@@ -85,6 +88,7 @@ public class SOSResultSet extends OGCResultSet {
 			row = new TableRow(columns, ob);
 		} else {
 			IOUtils.closeQuietly(currentCollection);
+			IOUtils.closeQuietly(sourceStream);
 			try {
 				currentCollection = nextCollection();
 			}
