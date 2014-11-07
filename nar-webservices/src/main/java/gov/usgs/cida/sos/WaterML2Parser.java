@@ -19,10 +19,17 @@ public class WaterML2Parser {
 		this.observationResults = observationResults;
 	}
 	
-	public ObservationCollection getObservations() throws FileNotFoundException, XMLStreamException {
+	public ObservationCollection getObservations() throws XMLStreamException {
 		InputStreamReader reader = new InputStreamReader(observationResults);
 		XMLStreamReader xmlReader = XMLInputFactory.newInstance().createXMLStreamReader(reader);
 		ObservationCollection observationCollection = new ObservationCollection(xmlReader);
+		return observationCollection;
+	}
+	
+	public FilteredObservationCollection getFilteredObservations(OrderedFilter filter) throws XMLStreamException {
+		InputStreamReader reader = new InputStreamReader(observationResults);
+		XMLStreamReader xmlReader = XMLInputFactory.newInstance().createXMLStreamReader(reader);
+		FilteredObservationCollection observationCollection = new FilteredObservationCollection(xmlReader, filter);
 		return observationCollection;
 	}
 	

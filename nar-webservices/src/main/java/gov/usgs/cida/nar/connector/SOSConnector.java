@@ -1,7 +1,6 @@
 package gov.usgs.cida.nar.connector;
 
 import gov.usgs.cida.nar.resultset.SOSResultSet;
-import gov.usgs.cida.nar.service.ConstituentType;
 import gov.usgs.cida.nar.service.DownloadType;
 import gov.usgs.cida.nude.column.Column;
 import gov.usgs.cida.nude.column.ColumnGrouping;
@@ -14,13 +13,14 @@ import gov.usgs.cida.nude.filter.FilterStageBuilder;
 import gov.usgs.cida.nude.filter.FilteredResultSet;
 import gov.usgs.cida.nude.resultset.inmemory.StringTableResultSet;
 import gov.usgs.cida.nude.resultset.inmemory.TableRow;
+import gov.usgs.cida.sos.ObservationCollection;
+import gov.usgs.cida.sos.OrderedFilter;
 import gov.usgs.cida.sos.WaterML2Parser;
 import java.io.Closeable;
-import java.io.FileNotFoundException;
 import java.sql.ResultSet;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.SortedSet;
 import javax.xml.stream.XMLStreamException;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
@@ -37,7 +37,7 @@ public class SOSConnector implements IConnector, Closeable {
 	
 	private static final Logger log = LoggerFactory.getLogger(SOSConnector.class);
 
-	public static final Column COMPOSITE_KEY_COL = new SimpleColumn("COMPOSITE");
+	public static final Column COMPOSITE_KEY_COL = new SimpleColumn("COMPOSITE", false);
 	public static final Column SOS_SITE_COL = new SimpleColumn("SITE_QW_ID");
 	public static final Column SOS_CONSTITUENT_COL = new SimpleColumn("CONSTIT");
 	public static final Column SOS_MOD_TYPE_COL = new SimpleColumn("MODTYPE");
@@ -47,33 +47,16 @@ public class SOSConnector implements IConnector, Closeable {
 	
 	private SOSClient client;
 	private ColumnGrouping cg;
-	private String sosEndpoint;
-	private DateTime startTime;
-	private DateTime endTime;
-	private List<String> observedProperties;
-	private String procedure;
-	private List<String> featuresOfInterest;
-
-	private String modType;
-	private String valueColumn;
+	private SortedSet<OrderedFilter> filters;
 	
 	private boolean isReady;
 
 
-	public SOSConnector(String sosEndpoint, DateTime startTime, DateTime endTime, List<String> observedProperties,
-			String procedure, List<String> featuresOfInterest) {
-		this.sosEndpoint = sosEndpoint;
-		this.startTime = startTime;
-		this.endTime = endTime;
-		this.observedProperties = observedProperties;
-		this.procedure = procedure;
-		this.featuresOfInterest = featuresOfInterest;
+	public SOSConnector(SOSClient client, SortedSet<OrderedFilter> filters, String valueColumn) {
+		this.client = client;
+		this.filters = filters;
 		this.isReady = false;
 		
-		this.modType = DownloadType.getModTypeFromProcedure(procedure);
-		this.valueColumn = DownloadType.getColumnNameFromProcedure(procedure);
-		
-		this.client = new SOSClient(sosEndpoint, startTime, endTime, observedProperties, Arrays.asList(procedure), featuresOfInterest);
 		this.cg = makeColumnGrouping(valueColumn);
 	}
 
@@ -94,24 +77,19 @@ public class SOSConnector implements IConnector, Closeable {
 		if (!isReady()) {
 			throw new RuntimeException("Not ready yet");
 		}
-		WaterML2Parser parser = new WaterML2Parser(this.client.readFile());
-		try {
-			resultSet = new SOSResultSet(parser.getObservations(), this.cg);
-		} catch (FileNotFoundException | XMLStreamException ex) {
-			log.error("Cannot read stream", ex);
-			resultSet = new StringTableResultSet(getExpectedColumns());
-		}
+		resultSet = new SOSResultSet(this.filters, this.client, this.cg);
 		
 		FilterStage makeNumericColumnsStage = new FilterStageBuilder(getExpectedColumns())
-				.addTransform(new SimpleColumn(SOS_SITE_COL.getName() + NUMERIC_SUFFIX), new ColumnTransform() {
+				.addTransform(new SimpleColumn(SOS_SITE_COL.getName() + NUMERIC_SUFFIX, false), new ColumnTransform() {
 					@Override
 					public String transform(TableRow row) {
 						String value = row.getValue(SOS_SITE_COL);
 						int orderedVal = value.length() * Integer.parseInt(value);
-						return "" + orderedVal;
+						String stringVal = String.valueOf(orderedVal);
+						return stringVal;
 					}
 				})
-				.addTransform(new SimpleColumn(SOS_CONSTITUENT_COL.getName() + NUMERIC_SUFFIX), new ColumnTransform() {
+				.addTransform(new SimpleColumn(SOS_CONSTITUENT_COL.getName() + NUMERIC_SUFFIX, false), new ColumnTransform() {
 					@Override
 					public String transform(TableRow row) {
 						String value = row.getValue(SOS_CONSTITUENT_COL);
@@ -119,7 +97,7 @@ public class SOSConnector implements IConnector, Closeable {
 						return StringUtils.leftPad(orderedVal.substring(0, 4), 4, "0");
 					}
 				})
-				.addTransform(new SimpleColumn(SOS_MOD_TYPE_COL.getName() + NUMERIC_SUFFIX), new ColumnTransform() {
+				.addTransform(new SimpleColumn(SOS_MOD_TYPE_COL.getName() + NUMERIC_SUFFIX, false), new ColumnTransform() {
 					@Override
 					public String transform(TableRow row) {
 						String value = row.getValue(SOS_MOD_TYPE_COL);
@@ -127,13 +105,13 @@ public class SOSConnector implements IConnector, Closeable {
 						return StringUtils.leftPad(orderedVal.substring(0, 4), 4, "0");
 					}
 				})
-				.addTransform(new SimpleColumn(SOS_DATE_COL.getName() + NUMERIC_SUFFIX), new ColumnTransform() {
+				.addTransform(new SimpleColumn(SOS_DATE_COL.getName() + NUMERIC_SUFFIX, false), new ColumnTransform() {
 					@Override
 					public String transform(TableRow row) {
 						String value = row.getValue(SOS_DATE_COL);
 						DateTime parsed = DateTime.parse(value);
-						int padTo = String.valueOf(DateTime.now().getMillis()).length();
-						return StringUtils.leftPad(String.valueOf(parsed.getMillis()), padTo, "0");
+						int padTo = String.valueOf(DateTime.now().getMillis()/1000).length();
+						return StringUtils.leftPad(String.valueOf(parsed.getMillis()/1000), padTo, "0");
 					}
 				})
 				.buildFilterStage();

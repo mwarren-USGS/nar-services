@@ -22,8 +22,8 @@ public class ObservationCollection implements Iterable, Iterator, Closeable {
 
 	private boolean inUse;
 	private XMLStreamReader reader;
-	private Observation currentObservation;
-	private ObservationMetadata sharedMetadata;
+	protected Observation currentObservation;
+	protected ObservationMetadata sharedMetadata;
 	
 	public ObservationCollection(XMLStreamReader reader) {
 		this.reader = reader;
