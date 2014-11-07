@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.SortedSet;
 import javax.xml.stream.XMLStreamException;
 import org.apache.commons.io.IOUtils;
@@ -28,13 +29,15 @@ public class SOSResultSet extends OGCResultSet {
 	
 	private static final Logger log = LoggerFactory.getLogger(SOSResultSet.class);
 	
-	private SortedSet<OrderedFilter> filters;
+	private PriorityQueue<OrderedFilter> filters;
 	private SOSClient client;
 	private ObservationCollection currentCollection;
 	private InputStream sourceStream;
 
 	public SOSResultSet(SortedSet<OrderedFilter> filters, SOSClient client, ColumnGrouping colGroups) {
-		this.filters = filters;
+		this.filters = new PriorityQueue<>();
+		this.filters.addAll(filters);
+		
 		this.client = client;
 		this.columns = colGroups;
 	}
@@ -50,10 +53,8 @@ public class SOSResultSet extends OGCResultSet {
 		ObservationCollection collection = null;
 		sourceStream = this.client.readFile();
 		WaterML2Parser parser = new WaterML2Parser(sourceStream);
-		// I should have made this a Queue, but I'll fake it.
-		if (filters.size() > 0) {
-			OrderedFilter first = filters.first();
-			filters.remove(first);
+		if (!filters.isEmpty()) {
+			OrderedFilter first = filters.poll();
 			collection = parser.getFilteredObservations(first);
 		}
 		return collection;

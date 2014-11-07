@@ -170,17 +170,18 @@ public class SosAggregationService {
 		
 		for (String columnName : columnMap.keySet()) {
 			List<String> procList = columnMap.get(columnName);
-			SortedSet<OrderedFilter> filters = new TreeSet<>();
-			SOSClient sosClient = new SOSClient(sosUrl, start, end, actualProperties, procList, stationId);
 			for (String procedure : procList) {
+				SortedSet<OrderedFilter> filters = new TreeSet<>();
+				SOSClient sosClient = new SOSClient(sosUrl, start, end, actualProperties, procList, stationId);
+
 				for (String prop : actualProperties) {
 					for (String featureOfInterest : stationId) {
 						filters.add(new OrderedFilter(procedure, prop, featureOfInterest));
 					}
 				}
+				final SOSConnector sosConnector = new SOSConnector(sosClient, filters, columnName);
+				sosConnectors.add(sosConnector);
 			}
-			final SOSConnector sosConnector = new SOSConnector(sosClient, filters, columnName);
-			sosConnectors.add(sosConnector);
 		}
 		return sosConnectors;
 	}
