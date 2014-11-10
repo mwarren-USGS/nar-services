@@ -13,3 +13,4 @@ nb-configuration.xml
 .settings
 .classpath
 target
+catalina.base_IS_UNDEFINED/
