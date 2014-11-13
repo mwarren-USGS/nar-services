@@ -1,7 +1,6 @@
 package gov.usgs.cida.nar.connector;
 
 import gov.usgs.cida.nar.resultset.SOSResultSet;
-import gov.usgs.cida.nar.service.DownloadType;
 import gov.usgs.cida.nude.column.Column;
 import gov.usgs.cida.nude.column.ColumnGrouping;
 import gov.usgs.cida.nude.column.SimpleColumn;
@@ -11,17 +10,13 @@ import gov.usgs.cida.nude.filter.ColumnTransform;
 import gov.usgs.cida.nude.filter.FilterStage;
 import gov.usgs.cida.nude.filter.FilterStageBuilder;
 import gov.usgs.cida.nude.filter.FilteredResultSet;
-import gov.usgs.cida.nude.resultset.inmemory.StringTableResultSet;
 import gov.usgs.cida.nude.resultset.inmemory.TableRow;
-import gov.usgs.cida.sos.ObservationCollection;
 import gov.usgs.cida.sos.OrderedFilter;
-import gov.usgs.cida.sos.WaterML2Parser;
 import java.io.Closeable;
 import java.sql.ResultSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.SortedSet;
-import javax.xml.stream.XMLStreamException;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;

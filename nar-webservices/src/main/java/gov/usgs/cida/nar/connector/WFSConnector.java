@@ -29,13 +29,13 @@ public class WFSConnector implements IConnector {
 	private static final Logger log = LoggerFactory.getLogger(WFSConnector.class);
 	
 	public static final String WFS_SITE_FID_COL_NAME = "FID";
-	public static final String WFS_SITE_ID_COL_NAME = "siteid";
-	public static final String WFS_STA_NAME_COL_NAME = "staname";
-	public static final String WFS_LAT_COL_NAME = "latitude";
-	public static final String WFS_LONG_COL_NAME = "longitude";
-	public static final String WFS_SITE_TYPE_COL_NAME = "sitetype";
+	public static final String WFS_SITE_ID_COL_NAME = "qw_id";
+	public static final String WFS_STA_NAME_COL_NAME = "qw_name";
+	public static final String WFS_LAT_COL_NAME = "qw_lat";
+	public static final String WFS_LONG_COL_NAME = "qw_long";
+	public static final String WFS_SITE_TYPE_COL_NAME = "site_type";
 	public static final String WFS_STATE_COL_NAME = "state";
-	public static final String WFS_MS_SITE_COL_NAME = "MSSite";
+	public static final String WFS_MS_SITE_COL_NAME = "mssite";
 	
 	private ColumnGrouping cg;
 	private WFSClientInterface client;
