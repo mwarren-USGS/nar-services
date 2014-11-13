@@ -43,7 +43,7 @@ public class SiteInformationService {
 	
 	public static final String SITE_ATTRIBUTE_TITLE = DownloadType.siteAttribute.getTitle();
 	public static final String SITE_ATTRIBUTE_OUT_FILENAME = SITE_ATTRIBUTE_TITLE.replaceAll(" ", "_");
-	public static final String MRB_SITE_TYPE_VAL = "MRB";
+	public static final String MRB_SITE_TYPE_VAL = "Mississippi River Basin";
 	public static final String MS_SITE_VAL = "MS";
 	
 	private static final String SITE_INFO_URL_JNDI_NAME = "nar.endpoint.ows";
@@ -180,7 +180,8 @@ public class SiteInformationService {
 			if(features != null) {
 				SimpleFeatureIterator iter = features.features();
 				while(iter.hasNext()) {
-					stationIds.add(iter.next().getAttribute(WFSConnector.WFS_SITE_ID_COL_NAME).toString());
+					String site = iter.next().getAttribute(WFSConnector.WFS_SITE_ID_COL_NAME).toString();
+					stationIds.add(site);
 				}
 			}
 		} finally {
@@ -189,6 +190,7 @@ public class SiteInformationService {
 			} catch (Exception e) {
 			}
 		}
+		
 		
 		return stationIds;
 	}
