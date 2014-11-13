@@ -181,6 +181,7 @@ public class SiteInformationService {
 				SimpleFeatureIterator iter = features.features();
 				while(iter.hasNext()) {
 					String site = iter.next().getAttribute(WFSConnector.WFS_SITE_ID_COL_NAME).toString();
+					stationIds.add(site);
 				}
 			}
 		} finally {
