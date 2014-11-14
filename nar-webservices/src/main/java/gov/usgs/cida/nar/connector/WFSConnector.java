@@ -31,6 +31,9 @@ public class WFSConnector implements IConnector {
 	public static final String WFS_SITE_FID_COL_NAME = "FID";
 	public static final String WFS_SITE_ID_COL_NAME = "qw_id";
 	public static final String WFS_STA_NAME_COL_NAME = "qw_name";
+	public static final String WFS_FLOW_ID_COL_NAME = "flow_id";
+	public static final String WFS_FLOW_NAME_COL_NAME = "flow_name";
+	public static final String WFS_DRAINAGE_AREA_COL_NAME = "da_mi2";
 	public static final String WFS_LAT_COL_NAME = "qw_lat";
 	public static final String WFS_LONG_COL_NAME = "qw_long";
 	public static final String WFS_SITE_TYPE_COL_NAME = "site_type";
@@ -61,6 +64,9 @@ public class WFSConnector implements IConnector {
 		allColumns.add(primaryKey);
 		allColumns.add(new SimpleColumn(WFS_SITE_ID_COL_NAME));
 		allColumns.add(new SimpleColumn(WFS_STA_NAME_COL_NAME));
+		allColumns.add(new SimpleColumn(WFS_FLOW_ID_COL_NAME));
+		allColumns.add(new SimpleColumn(WFS_FLOW_NAME_COL_NAME));
+		allColumns.add(new SimpleColumn(WFS_DRAINAGE_AREA_COL_NAME));
 		allColumns.add(new SimpleColumn(WFS_LAT_COL_NAME));
 		allColumns.add(new SimpleColumn(WFS_LONG_COL_NAME));
 		allColumns.add(new SimpleColumn(WFS_SITE_TYPE_COL_NAME));

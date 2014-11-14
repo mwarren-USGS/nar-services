@@ -72,6 +72,8 @@ public class SosAggregationService {
 			public ResultSet runStep(ResultSet rs) {
 				boolean areAllReady = false;
 				List<ResultSet> rsets = new ArrayList<>();
+				
+				long start = System.currentTimeMillis();
 				while (!areAllReady) {
 					boolean readyCheck = true;
 					int numberReady = 0;
@@ -95,6 +97,7 @@ public class SosAggregationService {
 					rsets.add(resultSet);
 				}
 				
+				log.debug("***** Time elapsed: " + (System.currentTimeMillis() - start));
 				return new MuxResultSet(rsets);
 			}
 
