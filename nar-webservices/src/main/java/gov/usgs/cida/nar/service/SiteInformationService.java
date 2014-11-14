@@ -5,9 +5,11 @@ import gov.usgs.cida.nar.util.DescriptionLoaderSingleton;
 import gov.usgs.cida.nar.util.JNDISingleton;
 import gov.usgs.cida.nude.column.Column;
 import gov.usgs.cida.nude.column.ColumnGrouping;
+import gov.usgs.cida.nude.column.SimpleColumn;
 import gov.usgs.cida.nude.filter.FilterStageBuilder;
 import gov.usgs.cida.nude.filter.FilterStep;
 import gov.usgs.cida.nude.filter.NudeFilterBuilder;
+import gov.usgs.cida.nude.filter.transform.ColumnAlias;
 import gov.usgs.cida.nude.out.Dispatcher;
 import gov.usgs.cida.nude.out.StreamResponse;
 import gov.usgs.cida.nude.out.TableResponse;
@@ -49,6 +51,15 @@ public class SiteInformationService {
 	private static final String SITE_INFO_URL_JNDI_NAME = "nar.endpoint.ows";
 	private static final String SITE_LAYER_JNDI_NAME = "nar.ows.sitelayer";
 	
+	private static final String SITE_QW_ID_OUT_COL = "SITE_QW_ID";
+	private static final String SITE_QW_NAME_OUT_COL = "SITE_QW_NAME";
+	private static final String SITE_FLOW_ID_OUT_COL = "SITE_FLOW_ID";
+	private static final String SITE_FLOW_NAME_OUT_COL = "SITE_FLOW_NAME";
+	private static final String DA_OUT_COL = "DA";
+	private static final String LATITUDE_OUT_COL = "LATITUDE";
+	private static final String LONGITUDE_OUT_COL = "LONGITUDE";
+	private static final String SITE_TYPE_OUT_COL = "SITE_TYPE";
+	
 	public void streamData(OutputStream output, 
 			final MimeType mimeType,
 			final List<String> siteType,
@@ -73,20 +84,34 @@ public class SiteInformationService {
 				return wfsConnector.getExpectedColumns();
 			}
 		};
-		
 		steps.add(connectorStep);
 		
-		List<Column> wrapped = connectorStep.getExpectedColumns().getColumns();
-		ColumnGrouping removed = new ColumnGrouping(wrapped.subList(1, wrapped.size()));
+		//rename columns to specified headers
+		ColumnGrouping originals = connectorStep.getExpectedColumns();
+		FilterStep renameFilterStep = new FilterStep(new NudeFilterBuilder(originals)
+						.addFilterStage(new FilterStageBuilder(originals)
+							.addTransform(new SimpleColumn(SITE_QW_ID_OUT_COL), new ColumnAlias(originals.get(2)))
+							.addTransform(new SimpleColumn(SITE_QW_NAME_OUT_COL), new ColumnAlias(originals.get(3)))
+							.addTransform(new SimpleColumn(SITE_FLOW_ID_OUT_COL), new ColumnAlias(originals.get(4)))
+							.addTransform(new SimpleColumn(SITE_FLOW_NAME_OUT_COL), new ColumnAlias(originals.get(5)))
+							.addTransform(new SimpleColumn(DA_OUT_COL), new ColumnAlias(originals.get(6)))
+							.addTransform(new SimpleColumn(LATITUDE_OUT_COL), new ColumnAlias(originals.get(7)))
+							.addTransform(new SimpleColumn(LONGITUDE_OUT_COL), new ColumnAlias(originals.get(8)))
+							.addTransform(new SimpleColumn(SITE_TYPE_OUT_COL), new ColumnAlias(originals.get(9)))
+							.buildFilterStage())
+				.buildFilter());
+		steps.add(renameFilterStep);
+
+		//remove FID and all old column names
+		List<Column> wrapped = renameFilterStep.getExpectedColumns().getColumns();
+		ColumnGrouping removed = new ColumnGrouping(wrapped.subList(9, wrapped.size()));
 		FilterStep removeFIDFilterStep = new FilterStep(new NudeFilterBuilder(removed)
 				.addFilterStage(new FilterStageBuilder(removed)
 						.buildFilterStage())
 				.buildFilter());
-		
 		steps.add(removeFIDFilterStep);
 		
 		Plan plan = new Plan(steps);
-		
 		ResultSet runStep = Plan.runPlan(plan);
 		TableResponse tr = new TableResponse(runStep);
 		StreamResponse sr = null;
@@ -96,7 +121,7 @@ public class SiteInformationService {
 			log.error("Unable to build formatted response", ex);
 		}
 		if (sr != null && output != null) {
-			if (mimeType == MimeType.CSV || mimeType == MimeType.TAB) {
+			if (mimeType == MimeType.CSV || mimeType == MimeType.TAB) { //TODO use NUDE for this header writing
 				output.write(DescriptionLoaderSingleton.getDescription(SITE_ATTRIBUTE_TITLE).getBytes());
 			}
 			StreamResponse.dispatch(sr, new PrintWriter(output));
