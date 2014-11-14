@@ -113,6 +113,26 @@ public class SosAggregationService {
 		
 		steps.add(connectorStep);
 
+		//do necessary transformations by download type
+		switch(this.type) {
+			case annualLoad:
+				addAnnualLoadSteps(steps);
+				break;
+			case mayLoad:
+				addMayLoadSteps(steps);
+				break;
+			case annualFlow:
+				addAnnualFlowSteps(steps);
+				break;
+			case dailyFlow:
+				addDailyFlowSteps(steps);
+				break;
+			case discreteQw:
+				addDiscreteQwSteps(steps);
+				break;
+			default: //nothing
+		}
+		
 		Plan plan = new Plan(steps);
 		
 		ResultSet runStep = Plan.runPlan(plan);
@@ -186,6 +206,26 @@ public class SosAggregationService {
 			sosConnectors.add(sosConnector);
 		}
 		return sosConnectors;
+	}
+	
+	private void addAnnualLoadSteps(List<PlanStep> steps) {
+		//TODO
+	}
+	
+	private void addMayLoadSteps(List<PlanStep> steps) {
+		//TODO
+	}
+
+	private void addAnnualFlowSteps(List<PlanStep> steps) {
+		//TODO
+	}
+	
+	private void addDailyFlowSteps(List<PlanStep> steps) {
+		//TODO
+	}
+
+	private void addDiscreteQwSteps(List<PlanStep> steps) {
+		//TODO
 	}
 	
 }
