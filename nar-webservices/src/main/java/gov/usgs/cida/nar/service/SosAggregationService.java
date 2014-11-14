@@ -2,6 +2,9 @@ package gov.usgs.cida.nar.service;
 
 import gov.usgs.cida.nar.connector.SOSClient;
 import gov.usgs.cida.nar.connector.SOSConnector;
+import gov.usgs.cida.nar.transform.PrefixStripTransform;
+import gov.usgs.cida.nar.transform.ToDayDateTransform;
+import gov.usgs.cida.nar.transform.WaterYearTransform;
 import gov.usgs.cida.nude.column.Column;
 import gov.usgs.cida.nude.column.ColumnGrouping;
 import gov.usgs.cida.nude.column.SimpleColumn;
@@ -54,6 +57,8 @@ public class SosAggregationService {
 	private static final String SITE_CONSTIT_IN_COL = "CONSTIT";
 	private static final String SITE_CONCENTRATION_IN_COL = "CONCENTRATION";
 	private static final String SITE_REMARK_IN_COL = "REMARK";
+	
+	private static final String PROPERTY_PREFIX = "http://cida.usgs.gov/def/NAR/property/";
 	
 	private DownloadType type;
 	private String sosUrl;
@@ -264,7 +269,12 @@ public class SosAggregationService {
 				.buildFilter());
 		steps.add(removeUnusedColsStep);
 
-		//TODO covert WY column to water year
+		//convert date to WY
+		steps.add(new FilterStep(new NudeFilterBuilder(finalCols)
+				.addFilterStage(new FilterStageBuilder(finalCols)
+				.addTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL)), new WaterYearTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL))))
+				.buildFilterStage())
+		.buildFilter()));
 
 		return steps;
 	}
@@ -297,7 +307,13 @@ public class SosAggregationService {
 				.buildFilter());
 		steps.add(removeUnusedColsStep);
 		
-		//TODO covert WY column to water year and DATE column to day date
+		//convert dates to WY and day
+		steps.add(new FilterStep(new NudeFilterBuilder(finalCols)
+				.addFilterStage(new FilterStageBuilder(finalCols)
+				.addTransform(finalColList.get(indexOfCol(finalColList, DATE_IN_COL)), new ToDayDateTransform(finalColList.get(indexOfCol(finalColList, DATE_IN_COL))))
+				.addTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL)), new WaterYearTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL))))
+				.buildFilterStage())
+		.buildFilter()));
 
 		return steps;
 	}
@@ -309,7 +325,7 @@ public class SosAggregationService {
 		ColumnGrouping originals = prevSteps.get(prevSteps.size()-1).getExpectedColumns();
 		FilterStep renameColsStep = new FilterStep(new NudeFilterBuilder(originals)
 			.addFilterStage(new FilterStageBuilder(originals)
-//			.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(5)))
+			.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(5)))
 			.buildFilterStage())
 			.buildFilter());
 		steps.add(renameColsStep);
@@ -322,11 +338,9 @@ public class SosAggregationService {
 //		finalColList.add(allCols.get(indexOfCol(allCols, SITE_FLOW_ID_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, SITE_CONSTIT_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, DATE_IN_COL)));
-//		finalColList.add(allCols.get(indexOfCol(allCols, WY_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, WY_OUT_COL)));
 //		finalColList.add(allCols.get(indexOfCol(allCols, SITE_CONCENTRATION_OUT_COL)));
 //		finalColList.add(allCols.get(indexOfCol(allCols, SITE_REMARK_OUT_COL)));
-		
-		//TODO covert WY column to water year and DATE column to day date
 		
 		ColumnGrouping finalCols = new ColumnGrouping(finalColList);
 		FilterStep removeUnusedColsStep = new FilterStep(new NudeFilterBuilder(finalCols)
@@ -334,6 +348,22 @@ public class SosAggregationService {
 				.buildFilterStage())
 				.buildFilter());
 		steps.add(removeUnusedColsStep);
+		
+		//convert dates to WY and day
+		steps.add(new FilterStep(new NudeFilterBuilder(finalCols)
+				.addFilterStage(new FilterStageBuilder(finalCols)
+				.addTransform(finalColList.get(indexOfCol(finalColList, DATE_IN_COL)), new ToDayDateTransform(finalColList.get(indexOfCol(finalColList, DATE_IN_COL))))
+				.addTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL)), new WaterYearTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL))))
+				.buildFilterStage())
+		.buildFilter()));
+		
+		//Strip out the constituent prefix
+		steps.add(new FilterStep(new NudeFilterBuilder(finalCols)
+				.addFilterStage(new FilterStageBuilder(finalCols)
+				.addTransform(finalColList.get(indexOfCol(finalColList, SITE_CONSTIT_IN_COL)), 
+						new PrefixStripTransform(finalColList.get(indexOfCol(finalColList, SITE_CONSTIT_IN_COL)), PROPERTY_PREFIX))
+				.buildFilterStage())
+		.buildFilter()));
 		
 		return steps;
 	}
