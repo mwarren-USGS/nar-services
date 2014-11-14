@@ -326,21 +326,20 @@ public class SosAggregationService {
 		FilterStep renameColsStep = new FilterStep(new NudeFilterBuilder(originals)
 			.addFilterStage(new FilterStageBuilder(originals)
 			.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(5)))
+			.addTransform(new SimpleColumn(SITE_CONCENTRATION_IN_COL), new ColumnAlias(originals.get(6)))
 			.buildFilterStage())
 			.buildFilter());
 		steps.add(renameColsStep);
 		
-		//drop modtype and procedure? columns
 		//missing cols commented out until available 
 		List<Column> finalColList = new ArrayList<>();
 		List<Column> allCols = renameColsStep.getExpectedColumns().getColumns();
 		finalColList.add(allCols.get(indexOfCol(allCols, SITE_QW_ID_IN_COL)));
-//		finalColList.add(allCols.get(indexOfCol(allCols, SITE_FLOW_ID_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, SITE_CONSTIT_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, DATE_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, WY_OUT_COL)));
-//		finalColList.add(allCols.get(indexOfCol(allCols, SITE_CONCENTRATION_OUT_COL)));
-//		finalColList.add(allCols.get(indexOfCol(allCols, SITE_REMARK_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, SITE_CONCENTRATION_IN_COL)));
+		//TODO NEED REMARK
 		
 		ColumnGrouping finalCols = new ColumnGrouping(finalColList);
 		FilterStep removeUnusedColsStep = new FilterStep(new NudeFilterBuilder(finalCols)
