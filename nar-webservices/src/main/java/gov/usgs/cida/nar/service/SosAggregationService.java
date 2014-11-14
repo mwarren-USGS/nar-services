@@ -116,19 +116,19 @@ public class SosAggregationService {
 		//do necessary transformations by download type
 		switch(this.type) {
 			case annualLoad:
-				addAnnualLoadSteps(steps);
+				steps.addAll(getAnnualLoadSteps(steps));
 				break;
 			case mayLoad:
-				addMayLoadSteps(steps);
+				steps.addAll(getMayLoadSteps(steps));
 				break;
 			case annualFlow:
-				addAnnualFlowSteps(steps);
+				steps.addAll(getAnnualFlowSteps(steps));
 				break;
 			case dailyFlow:
-				addDailyFlowSteps(steps);
+				steps.addAll(getDailyFlowSteps(steps));
 				break;
 			case discreteQw:
-				addDiscreteQwSteps(steps);
+				steps.addAll(getDiscreteQwSteps(steps));
 				break;
 			default: //nothing
 		}
@@ -208,24 +208,34 @@ public class SosAggregationService {
 		return sosConnectors;
 	}
 	
-	private void addAnnualLoadSteps(List<PlanStep> steps) {
+	private List<PlanStep> getAnnualLoadSteps(final List<PlanStep> prevSteps) {
+		List<PlanStep> steps = new ArrayList<>();
 		//TODO
+		return steps;
 	}
 	
-	private void addMayLoadSteps(List<PlanStep> steps) {
+	private List<PlanStep> getMayLoadSteps(final List<PlanStep> prevSteps) {
+		List<PlanStep> steps = new ArrayList<>();
 		//TODO
+		return steps;
 	}
 
-	private void addAnnualFlowSteps(List<PlanStep> steps) {
+	private List<PlanStep> getAnnualFlowSteps(final List<PlanStep> prevSteps) {
+		List<PlanStep> steps = new ArrayList<>();
 		//TODO
+		return steps;
 	}
 	
-	private void addDailyFlowSteps(List<PlanStep> steps) {
+	private List<PlanStep> getDailyFlowSteps(final List<PlanStep> prevSteps) {
+		List<PlanStep> steps = new ArrayList<>();
 		//TODO
+		return steps;
 	}
 
-	private void addDiscreteQwSteps(List<PlanStep> steps) {
+	private List<PlanStep> getDiscreteQwSteps(final List<PlanStep> prevSteps) {
+		List<PlanStep> steps = new ArrayList<>();
 		//TODO
+		return steps;
 	}
 	
 }
