@@ -5,12 +5,13 @@ import gov.usgs.cida.nude.filter.ColumnTransform;
 import gov.usgs.cida.nude.resultset.inmemory.TableRow;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.Interval;
 import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * TODO --REALLY ONLY DOES CALENDAR YEAR
+ * 
  * @author dmsibley
  */
 public class WaterYearTransform implements ColumnTransform {
@@ -29,8 +30,17 @@ public class WaterYearTransform implements ColumnTransform {
 		if(null != row) {
 			String in = row.getValue(inColumn);
 			try {
-				DateTime inDate = ISODateTimeFormat.dateTimeParser().parseDateTime(in);
-				result = "" + inDate.withZone(DateTimeZone.UTC).getYear();
+				DateTime inDate = ISODateTimeFormat.dateTimeParser().parseDateTime(in).withZone(DateTimeZone.UTC);
+				int year = inDate.getYear();
+				
+				DateTime nextWaterYearStart = new DateTime(year, 10, 1, 0, 0, DateTimeZone.UTC);
+				DateTime nextWaterYearEnd = new DateTime(year + 1, 10, 1, 0, 0, DateTimeZone.UTC);
+				Interval nextWaterYear = new Interval(nextWaterYearStart, nextWaterYearEnd);
+				if (nextWaterYear.contains(inDate)) {
+					year++;
+				}
+				
+				result = "" + year;
 			} catch (Exception e) {
 				log.trace("Could not parse incoming value", e);
 			}
