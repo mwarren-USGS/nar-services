@@ -50,6 +50,11 @@ public class SosAggregationService {
 	private static final String WY_OUT_COL = "WY";
 	private static final String FLOW_OUT_COL = "FLOW";
 	
+	private static final String SITE_FLOW_ID_IN_COL = "SITE_FLOW_ID"; 
+	private static final String SITE_CONSTIT_IN_COL = "CONSTIT";
+	private static final String SITE_CONCENTRATION_IN_COL = "CONCENTRATION";
+	private static final String SITE_REMARK_IN_COL = "REMARK";
+	
 	private DownloadType type;
 	private String sosUrl;
 	private String observedPropertyPrefix;
@@ -299,7 +304,37 @@ public class SosAggregationService {
 
 	private List<PlanStep> getDiscreteQwSteps(final List<PlanStep> prevSteps) {
 		List<PlanStep> steps = new ArrayList<>();
-		//TODO
+		//rename columns to specified headers
+		//Not sure if any renaming is necessary until missing columns are available 
+		ColumnGrouping originals = prevSteps.get(prevSteps.size()-1).getExpectedColumns();
+		FilterStep renameColsStep = new FilterStep(new NudeFilterBuilder(originals)
+			.addFilterStage(new FilterStageBuilder(originals)
+//			.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(5)))
+			.buildFilterStage())
+			.buildFilter());
+		steps.add(renameColsStep);
+		
+		//drop modtype and procedure? columns
+		//missing cols commented out until available 
+		List<Column> finalColList = new ArrayList<>();
+		List<Column> allCols = renameColsStep.getExpectedColumns().getColumns();
+		finalColList.add(allCols.get(indexOfCol(allCols, SITE_QW_ID_IN_COL)));
+//		finalColList.add(allCols.get(indexOfCol(allCols, SITE_FLOW_ID_IN_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, SITE_CONSTIT_IN_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, DATE_IN_COL)));
+//		finalColList.add(allCols.get(indexOfCol(allCols, WY_OUT_COL)));
+//		finalColList.add(allCols.get(indexOfCol(allCols, SITE_CONCENTRATION_OUT_COL)));
+//		finalColList.add(allCols.get(indexOfCol(allCols, SITE_REMARK_OUT_COL)));
+		
+		//TODO covert WY column to water year and DATE column to day date
+		
+		ColumnGrouping finalCols = new ColumnGrouping(finalColList);
+		FilterStep removeUnusedColsStep = new FilterStep(new NudeFilterBuilder(finalCols)
+				.addFilterStage(new FilterStageBuilder(finalCols)
+				.buildFilterStage())
+				.buildFilter());
+		steps.add(removeUnusedColsStep);
+		
 		return steps;
 	}
 	
