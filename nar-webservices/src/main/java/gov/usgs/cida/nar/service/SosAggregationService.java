@@ -2,8 +2,14 @@ package gov.usgs.cida.nar.service;
 
 import gov.usgs.cida.nar.connector.SOSClient;
 import gov.usgs.cida.nar.connector.SOSConnector;
+import gov.usgs.cida.nude.column.Column;
 import gov.usgs.cida.nude.column.ColumnGrouping;
+import gov.usgs.cida.nude.column.SimpleColumn;
 import gov.usgs.cida.nude.connector.IConnector;
+import gov.usgs.cida.nude.filter.FilterStageBuilder;
+import gov.usgs.cida.nude.filter.FilterStep;
+import gov.usgs.cida.nude.filter.NudeFilterBuilder;
+import gov.usgs.cida.nude.filter.transform.ColumnAlias;
 import gov.usgs.cida.nude.out.Dispatcher;
 import gov.usgs.cida.nude.out.StreamResponse;
 import gov.usgs.cida.nude.out.TableResponse;
@@ -27,8 +33,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import javax.xml.stream.XMLStreamException;
-import org.apache.commons.io.IOUtils;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -37,6 +43,12 @@ import org.joda.time.format.DateTimeFormat;
 public class SosAggregationService {
 	
 	private static final Logger log = Logger.getLogger(SosAggregationService.class);
+	
+	private static final String SITE_QW_ID_IN_COL = "SITE_QW_ID";
+	private static final String DATE_IN_COL = "DATE";
+	
+	private static final String WY_OUT_COL = "WY";
+	private static final String FLOW_OUT_COL = "FLOW";
 	
 	private DownloadType type;
 	private String sosUrl;
@@ -222,13 +234,66 @@ public class SosAggregationService {
 
 	private List<PlanStep> getAnnualFlowSteps(final List<PlanStep> prevSteps) {
 		List<PlanStep> steps = new ArrayList<>();
-		//TODO
+		
+		//rename columns to specified headers
+		ColumnGrouping originals = prevSteps.get(prevSteps.size()-1).getExpectedColumns();
+		FilterStep renameColsStep = new FilterStep(new NudeFilterBuilder(originals)
+						.addFilterStage(new FilterStageBuilder(originals)
+							.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(5)))
+							.addTransform(new SimpleColumn(FLOW_OUT_COL), new ColumnAlias(originals.get(6)))
+							.buildFilterStage())
+				.buildFilter());
+		steps.add(renameColsStep);
+
+		//drop constit and modtype columns
+		List<Column> finalColList = new ArrayList<>();
+		List<Column> allCols = renameColsStep.getExpectedColumns().getColumns();
+		finalColList.add(allCols.get(indexOfCol(allCols, SITE_QW_ID_IN_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, WY_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, FLOW_OUT_COL)));
+		
+		ColumnGrouping finalCols = new ColumnGrouping(finalColList);
+		FilterStep removeUnusedColsStep = new FilterStep(new NudeFilterBuilder(finalCols)
+				.addFilterStage(new FilterStageBuilder(finalCols)
+						.buildFilterStage())
+				.buildFilter());
+		steps.add(removeUnusedColsStep);
+
+		//TODO covert WY column to water year
+
 		return steps;
 	}
 	
 	private List<PlanStep> getDailyFlowSteps(final List<PlanStep> prevSteps) {
 		List<PlanStep> steps = new ArrayList<>();
-		//TODO
+		
+		//rename columns to specified headers
+		ColumnGrouping originals = prevSteps.get(prevSteps.size()-1).getExpectedColumns();
+		FilterStep renameColsStep = new FilterStep(new NudeFilterBuilder(originals)
+						.addFilterStage(new FilterStageBuilder(originals)
+							.addTransform(new SimpleColumn(FLOW_OUT_COL), new ColumnAlias(originals.get(6)))
+							.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(5)))
+							.buildFilterStage())
+				.buildFilter());
+		steps.add(renameColsStep);
+		
+		//drop constit and modtype columns
+		List<Column> finalColList = new ArrayList<>();
+		List<Column> allCols = renameColsStep.getExpectedColumns().getColumns();
+		finalColList.add(allCols.get(indexOfCol(allCols, SITE_QW_ID_IN_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, DATE_IN_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, WY_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, FLOW_OUT_COL)));
+		
+		ColumnGrouping finalCols = new ColumnGrouping(finalColList);
+		FilterStep removeUnusedColsStep = new FilterStep(new NudeFilterBuilder(finalCols)
+				.addFilterStage(new FilterStageBuilder(finalCols)
+						.buildFilterStage())
+				.buildFilter());
+		steps.add(removeUnusedColsStep);
+		
+		//TODO covert WY column to water year and DATE column to day date
+
 		return steps;
 	}
 
@@ -238,4 +303,18 @@ public class SosAggregationService {
 		return steps;
 	}
 	
+	
+	/**
+	 * Helper function to get the index of a column with the given name
+	 */
+	private int indexOfCol(List<Column> cols, String colName) {
+		int index = -1;
+		for(int i = 0; i < cols.size(); i++) {
+			if(cols.get(i).getName().equals(colName)) {
+				index = i;
+				break;
+			}
+		}
+		return index;
+	}
 }
