@@ -6,6 +6,7 @@ import gov.usgs.cida.nar.transform.PrefixStripTransform;
 import gov.usgs.cida.nar.transform.ToDayDateTransform;
 import gov.usgs.cida.nar.transform.ToMonthNumberTransform;
 import gov.usgs.cida.nar.transform.WaterYearTransform;
+import gov.usgs.cida.nar.util.DescriptionLoaderSingleton;
 import gov.usgs.cida.nude.column.Column;
 import gov.usgs.cida.nude.column.ColumnGrouping;
 import gov.usgs.cida.nude.column.SimpleColumn;
@@ -26,6 +27,7 @@ import gov.usgs.webservices.framework.basic.MimeType;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.StringReader;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -103,14 +105,16 @@ public class SosAggregationService {
 		this.observedPropertyPrefix = observedPropertyPrefix;
 	}
 	
-	public void streamData(OutputStream output,
+	public void streamData(final OutputStream output,
 			final MimeType mimeType,
 			final List<String> constituent,
 			final List<String> stationId,
 			final String startDateTime,
 			final String endDateTime,
 			final String header) throws IOException {
-		//TODO do something with the header
+		
+		
+		final StringReader headerReader = new StringReader(header);
 		
 		final List<SOSConnector> sosConnectors = getSosConnectors(
 				sosUrl,
@@ -144,7 +148,33 @@ public class SosAggregationService {
 					catch (InterruptedException ex) {
 						log.debug(ex);
 					}
+					
+					if (mimeType == MimeType.CSV || mimeType == MimeType.TAB) { //TODO use NUDE for this header writing
+						//write a single byte to keep the stream active
+						try {
+							if(headerReader.ready()) {
+								output.write(headerReader.read());
+								output.flush();
+							}
+						} catch (IOException e) {
+							log.debug("Exception writing header fragment", e);
+						}
+					}
+					
 					areAllReady = readyCheck;
+				}
+				
+				//Write out what's left of the header now that we aren't waiting for SOS connectors
+				if (mimeType == MimeType.CSV || mimeType == MimeType.TAB) { //TODO use NUDE for this header writing
+					//write a single byte to keep the stream active
+					try {
+						while(headerReader.ready()) {
+							output.write(headerReader.read());
+							output.flush();
+						}
+					} catch (IOException e) {
+						log.debug("Exception writing remaining header fragment", e);
+					}
 				}
 				
 				for (IConnector conn : sosConnectors) {
