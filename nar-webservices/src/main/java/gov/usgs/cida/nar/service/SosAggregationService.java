@@ -4,6 +4,7 @@ import gov.usgs.cida.nar.connector.SOSClient;
 import gov.usgs.cida.nar.connector.SOSConnector;
 import gov.usgs.cida.nar.transform.PrefixStripTransform;
 import gov.usgs.cida.nar.transform.ToDayDateTransform;
+import gov.usgs.cida.nar.transform.ToMonthNumberTransform;
 import gov.usgs.cida.nar.transform.WaterYearTransform;
 import gov.usgs.cida.nude.column.Column;
 import gov.usgs.cida.nude.column.ColumnGrouping;
@@ -46,17 +47,49 @@ import org.joda.time.format.DateTimeFormat;
 public class SosAggregationService {
 	
 	private static final Logger log = Logger.getLogger(SosAggregationService.class);
+
+	private static final String DATE_IN_COL = "DATE";
 	
 	private static final String SITE_QW_ID_IN_COL = "SITE_QW_ID";
-	private static final String DATE_IN_COL = "DATE";
+	//private static final String SITE_FLOW_ID_IN_COL = "SITE_FLOW_ID";
+
+	private static final String QW_CONSTIT_IN_COL = "CONSTIT";
+	private static final String QW_CONCENTRATION_IN_COL = "procedure"; 
+	//private static final String QW_REMARK_IN_COL = "REMARK";
+
+	private static final String FLOW_IN_COL = "procedure"; 
+	
+	private static final String AN_MASS_UPPER_95_IN_COL = "annual_mass_upper_95";
+	private static final String AN_MASS_LOWER_95_IN_COL = "annual_mass_lower_95";
+	private static final String AN_MASS_IN_COL = "annual_mass";
+	private static final String AN_YIELD_IN_COL = "annual_yield";
+	private static final String AN_CONC_MEAN_IN_COL = "annual_concentration_mean";
+	private static final String AN_CONC_FLOW_WEIGHTED_IN_COL = "annual_concentration_flow_weighted";
+	
+	private static final String MON_CONC_FLOW_WEIGHTED_IN_COL = "monthly_concentration_flow_weighted";
+	private static final String MON_MASS_UPPER_95_IN_COL = "monthly_mass_upper_95";
+	private static final String MON_MASS_IN_COL = "monthly_mass";
+	private static final String MON_FLOW_IN_COL = "procedure";
+	private static final String MON_MASS_LOWER_95_IN_COL= "monthly_mass_lower_95";
 	
 	private static final String WY_OUT_COL = "WY";
 	private static final String FLOW_OUT_COL = "FLOW";
-	
-	private static final String SITE_FLOW_ID_IN_COL = "SITE_FLOW_ID"; 
-	private static final String SITE_CONSTIT_IN_COL = "CONSTIT";
-	private static final String SITE_CONCENTRATION_IN_COL = "CONCENTRATION";
-	private static final String SITE_REMARK_IN_COL = "REMARK";
+
+	private static final String QW_CONCENTRATION_OUT_COL = "CONCENTRATION"; 
+
+	private static final String AN_MASS_UPPER_95_OUT_COL = "TONS_U95";
+	private static final String AN_MASS_LOWER_95_OUT_COL = "TONS_L95";
+	private static final String AN_MASS_OUT_COL = "TONS_LOAD";
+	private static final String AN_YIELD_OUT_COL = "YIELD";
+	private static final String AN_CONC_MEAN_OUT_COL = "MEAN_C";
+	private static final String AN_CONC_FLOW_WEIGHTED_OUT_COL = "FWC";
+
+	private static final String MON_CONC_FLOW_WEIGHTED_OUT_COL = "FWC";
+	private static final String MON_MASS_UPPER_95_OUT_COL = "TONS_U95";
+	private static final String MON_MASS_OUT_COL = "TONS_LOAD";
+	private static final String MON_FLOW_OUT_COL = "FLOW";
+	private static final String MON_MASS_LOWER_95_OUT_COL= "TONS_L95";
+	private static final String MONTH_OUT_COL= "TONS_L95";
 	
 	private static final String PROPERTY_PREFIX = "http://cida.usgs.gov/def/NAR/property/";
 	
@@ -232,13 +265,114 @@ public class SosAggregationService {
 	
 	private List<PlanStep> getAnnualLoadSteps(final List<PlanStep> prevSteps) {
 		List<PlanStep> steps = new ArrayList<>();
-		//TODO
+		
+		//rename columns to specified headers
+		ColumnGrouping originals = prevSteps.get(prevSteps.size()-1).getExpectedColumns();
+		FilterStep renameColsStep = new FilterStep(new NudeFilterBuilder(originals)
+						.addFilterStage(new FilterStageBuilder(originals)
+							.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), DATE_IN_COL) + 1)))
+							.addTransform(new SimpleColumn(AN_CONC_FLOW_WEIGHTED_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), AN_CONC_FLOW_WEIGHTED_IN_COL) + 1)))
+							.addTransform(new SimpleColumn(AN_CONC_MEAN_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), AN_CONC_MEAN_IN_COL) + 1)))
+							.addTransform(new SimpleColumn(AN_MASS_LOWER_95_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), AN_MASS_LOWER_95_IN_COL) + 1)))
+							.addTransform(new SimpleColumn(AN_MASS_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), AN_MASS_IN_COL) + 1)))
+							.addTransform(new SimpleColumn(AN_MASS_UPPER_95_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), AN_MASS_UPPER_95_IN_COL) + 1)))
+							.addTransform(new SimpleColumn(AN_YIELD_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), AN_YIELD_IN_COL) + 1)))
+							.buildFilterStage())
+				.buildFilter());
+		steps.add(renameColsStep);
+		
+		//drop constit and modtype columns
+		List<Column> finalColList = new ArrayList<>();
+		List<Column> allCols = renameColsStep.getExpectedColumns().getColumns();
+		finalColList.add(allCols.get(indexOfCol(allCols, SITE_QW_ID_IN_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, QW_CONSTIT_IN_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, WY_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, AN_MASS_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, AN_MASS_LOWER_95_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, AN_MASS_UPPER_95_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, AN_CONC_FLOW_WEIGHTED_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, AN_CONC_MEAN_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, AN_YIELD_OUT_COL)));
+		
+		ColumnGrouping finalCols = new ColumnGrouping(finalColList);
+		FilterStep removeUnusedColsStep = new FilterStep(new NudeFilterBuilder(finalCols)
+				.addFilterStage(new FilterStageBuilder(finalCols)
+						.buildFilterStage())
+				.buildFilter());
+		steps.add(removeUnusedColsStep);
+		
+		//convert date to WY
+		steps.add(new FilterStep(new NudeFilterBuilder(finalCols)
+				.addFilterStage(new FilterStageBuilder(finalCols)
+				.addTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL)), new WaterYearTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL))))
+				.buildFilterStage())
+		.buildFilter()));
+		
+		//Strip out the constituent prefix
+		steps.add(new FilterStep(new NudeFilterBuilder(finalCols)
+				.addFilterStage(new FilterStageBuilder(finalCols)
+				.addTransform(finalColList.get(indexOfCol(finalColList, QW_CONSTIT_IN_COL)), 
+						new PrefixStripTransform(finalColList.get(indexOfCol(finalColList, QW_CONSTIT_IN_COL)), PROPERTY_PREFIX))
+				.buildFilterStage())
+		.buildFilter()));
+		
 		return steps;
 	}
 	
 	private List<PlanStep> getMayLoadSteps(final List<PlanStep> prevSteps) {
 		List<PlanStep> steps = new ArrayList<>();
-		//TODO
+
+		//rename columns to specified headers
+		ColumnGrouping originals = prevSteps.get(prevSteps.size()-1).getExpectedColumns();
+		FilterStep renameColsStep = new FilterStep(new NudeFilterBuilder(originals)
+						.addFilterStage(new FilterStageBuilder(originals)
+							.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), DATE_IN_COL) + 1)))
+							.addTransform(new SimpleColumn(MONTH_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), DATE_IN_COL) + 1)))
+							.addTransform(new SimpleColumn(MON_CONC_FLOW_WEIGHTED_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), MON_CONC_FLOW_WEIGHTED_IN_COL) + 1)))
+							.addTransform(new SimpleColumn(MON_MASS_LOWER_95_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), MON_MASS_LOWER_95_IN_COL) + 1)))
+							.addTransform(new SimpleColumn(MON_MASS_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), MON_MASS_IN_COL) + 1)))
+							.addTransform(new SimpleColumn(MON_MASS_UPPER_95_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), MON_MASS_UPPER_95_IN_COL) + 1)))
+							.addTransform(new SimpleColumn(MON_FLOW_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), MON_FLOW_IN_COL) + 1)))
+							.buildFilterStage())
+				.buildFilter());
+		steps.add(renameColsStep);
+		
+		//drop constit and modtype columns
+		List<Column> finalColList = new ArrayList<>();
+		List<Column> allCols = renameColsStep.getExpectedColumns().getColumns();
+		finalColList.add(allCols.get(indexOfCol(allCols, SITE_QW_ID_IN_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, QW_CONSTIT_IN_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, WY_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, MONTH_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, MON_MASS_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, MON_MASS_LOWER_95_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, MON_MASS_UPPER_95_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, MON_CONC_FLOW_WEIGHTED_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, MON_FLOW_OUT_COL)));
+		
+		ColumnGrouping finalCols = new ColumnGrouping(finalColList);
+		FilterStep removeUnusedColsStep = new FilterStep(new NudeFilterBuilder(finalCols)
+				.addFilterStage(new FilterStageBuilder(finalCols)
+						.buildFilterStage())
+				.buildFilter());
+		steps.add(removeUnusedColsStep);
+		
+		//convert date to WY
+		steps.add(new FilterStep(new NudeFilterBuilder(finalCols)
+				.addFilterStage(new FilterStageBuilder(finalCols)
+				.addTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL)), new WaterYearTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL))))
+				.addTransform(finalColList.get(indexOfCol(finalColList, MONTH_OUT_COL)), new ToMonthNumberTransform(finalColList.get(indexOfCol(finalColList, MONTH_OUT_COL))))
+				.buildFilterStage())
+		.buildFilter()));
+		
+		//Strip out the constituent prefix
+		steps.add(new FilterStep(new NudeFilterBuilder(finalCols)
+				.addFilterStage(new FilterStageBuilder(finalCols)
+				.addTransform(finalColList.get(indexOfCol(finalColList, QW_CONSTIT_IN_COL)), 
+						new PrefixStripTransform(finalColList.get(indexOfCol(finalColList, QW_CONSTIT_IN_COL)), PROPERTY_PREFIX))
+				.buildFilterStage())
+		.buildFilter()));
+		
 		return steps;
 	}
 
@@ -249,8 +383,8 @@ public class SosAggregationService {
 		ColumnGrouping originals = prevSteps.get(prevSteps.size()-1).getExpectedColumns();
 		FilterStep renameColsStep = new FilterStep(new NudeFilterBuilder(originals)
 						.addFilterStage(new FilterStageBuilder(originals)
-							.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(5)))
-							.addTransform(new SimpleColumn(FLOW_OUT_COL), new ColumnAlias(originals.get(6)))
+							.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), DATE_IN_COL) + 1)))
+							.addTransform(new SimpleColumn(FLOW_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), FLOW_IN_COL) + 1)))
 							.buildFilterStage())
 				.buildFilter());
 		steps.add(renameColsStep);
@@ -286,8 +420,8 @@ public class SosAggregationService {
 		ColumnGrouping originals = prevSteps.get(prevSteps.size()-1).getExpectedColumns();
 		FilterStep renameColsStep = new FilterStep(new NudeFilterBuilder(originals)
 						.addFilterStage(new FilterStageBuilder(originals)
-							.addTransform(new SimpleColumn(FLOW_OUT_COL), new ColumnAlias(originals.get(6)))
-							.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(5)))
+							.addTransform(new SimpleColumn(FLOW_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), FLOW_IN_COL) + 1)))
+							.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), DATE_IN_COL) + 1)))
 							.buildFilterStage())
 				.buildFilter());
 		steps.add(renameColsStep);
@@ -325,8 +459,8 @@ public class SosAggregationService {
 		ColumnGrouping originals = prevSteps.get(prevSteps.size()-1).getExpectedColumns();
 		FilterStep renameColsStep = new FilterStep(new NudeFilterBuilder(originals)
 			.addFilterStage(new FilterStageBuilder(originals)
-			.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(5)))
-			.addTransform(new SimpleColumn(SITE_CONCENTRATION_IN_COL), new ColumnAlias(originals.get(6)))
+			.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), DATE_IN_COL) + 1)))
+			.addTransform(new SimpleColumn(QW_CONCENTRATION_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), QW_CONCENTRATION_IN_COL) + 1)))
 			.buildFilterStage())
 			.buildFilter());
 		steps.add(renameColsStep);
@@ -335,10 +469,10 @@ public class SosAggregationService {
 		List<Column> finalColList = new ArrayList<>();
 		List<Column> allCols = renameColsStep.getExpectedColumns().getColumns();
 		finalColList.add(allCols.get(indexOfCol(allCols, SITE_QW_ID_IN_COL)));
-		finalColList.add(allCols.get(indexOfCol(allCols, SITE_CONSTIT_IN_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, QW_CONSTIT_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, DATE_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, WY_OUT_COL)));
-		finalColList.add(allCols.get(indexOfCol(allCols, SITE_CONCENTRATION_IN_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, QW_CONCENTRATION_OUT_COL)));
 		//TODO NEED REMARK
 		
 		ColumnGrouping finalCols = new ColumnGrouping(finalColList);
@@ -359,8 +493,8 @@ public class SosAggregationService {
 		//Strip out the constituent prefix
 		steps.add(new FilterStep(new NudeFilterBuilder(finalCols)
 				.addFilterStage(new FilterStageBuilder(finalCols)
-				.addTransform(finalColList.get(indexOfCol(finalColList, SITE_CONSTIT_IN_COL)), 
-						new PrefixStripTransform(finalColList.get(indexOfCol(finalColList, SITE_CONSTIT_IN_COL)), PROPERTY_PREFIX))
+				.addTransform(finalColList.get(indexOfCol(finalColList, QW_CONSTIT_IN_COL)), 
+						new PrefixStripTransform(finalColList.get(indexOfCol(finalColList, QW_CONSTIT_IN_COL)), PROPERTY_PREFIX))
 				.buildFilterStage())
 		.buildFilter()));
 		
