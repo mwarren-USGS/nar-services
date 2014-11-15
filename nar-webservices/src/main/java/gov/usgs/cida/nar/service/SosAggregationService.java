@@ -26,6 +26,7 @@ import gov.usgs.webservices.framework.basic.MimeType;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.StringReader;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -47,6 +48,10 @@ import org.joda.time.format.DateTimeFormat;
 public class SosAggregationService {
 	
 	private static final Logger log = Logger.getLogger(SosAggregationService.class);
+	
+	//determines how long we wait to check if SOS connectors are ready
+	//a higher wait time also helps with keeping output streams active by slowly streaming out bytes
+	private static final int WAIT_TIME_BETWEEN_SOS_REQUESTS = 1000; 
 
 	private static final String DATE_IN_COL = "DATE";
 	
@@ -103,14 +108,16 @@ public class SosAggregationService {
 		this.observedPropertyPrefix = observedPropertyPrefix;
 	}
 	
-	public void streamData(OutputStream output,
+	public void streamData(final OutputStream output,
 			final MimeType mimeType,
 			final List<String> constituent,
 			final List<String> stationId,
 			final String startDateTime,
 			final String endDateTime,
 			final String header) throws IOException {
-		//TODO do something with the header
+		
+		
+		final StringReader headerReader = new StringReader(header);
 		
 		final List<SOSConnector> sosConnectors = getSosConnectors(
 				sosUrl,
@@ -139,12 +146,41 @@ public class SosAggregationService {
 					// TODO make sure isReady() will eventually be true
 					log.trace(String.format("Streams complete: {} of {}", ++numberReady, sosConnectors.size()));
 					try {
-						Thread.sleep(250);
+						Thread.sleep(WAIT_TIME_BETWEEN_SOS_REQUESTS);
 					}
 					catch (InterruptedException ex) {
 						log.debug(ex);
 					}
+					
+					if (mimeType == MimeType.CSV || mimeType == MimeType.TAB) { //TODO use NUDE for this header writing
+						//write a single byte to keep the stream active
+						try {
+							int nextByte = headerReader.read();
+							if(nextByte > -1) {
+								output.write(nextByte);
+								output.flush();
+							}
+						} catch (IOException e) {
+							log.debug("Exception writing header fragment", e);
+						}
+					}
+					
 					areAllReady = readyCheck;
+				}
+				
+				//Write out what's left of the header now that we aren't waiting for SOS connectors
+				if (mimeType == MimeType.CSV || mimeType == MimeType.TAB) { //TODO use NUDE for this header writing
+					//write a single byte to keep the stream active
+					try {
+						int nextByte = headerReader.read();
+						while(nextByte > -1) {
+							output.write(nextByte);
+							output.flush();
+							nextByte = headerReader.read();
+						}
+					} catch (IOException e) {
+						log.debug("Exception writing remaining header fragment", e);
+					}
 				}
 				
 				for (IConnector conn : sosConnectors) {
