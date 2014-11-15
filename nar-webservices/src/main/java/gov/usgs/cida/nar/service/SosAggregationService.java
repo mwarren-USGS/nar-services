@@ -6,7 +6,6 @@ import gov.usgs.cida.nar.transform.PrefixStripTransform;
 import gov.usgs.cida.nar.transform.ToDayDateTransform;
 import gov.usgs.cida.nar.transform.ToMonthNumberTransform;
 import gov.usgs.cida.nar.transform.WaterYearTransform;
-import gov.usgs.cida.nar.util.DescriptionLoaderSingleton;
 import gov.usgs.cida.nude.column.Column;
 import gov.usgs.cida.nude.column.ColumnGrouping;
 import gov.usgs.cida.nude.column.SimpleColumn;
@@ -152,8 +151,9 @@ public class SosAggregationService {
 					if (mimeType == MimeType.CSV || mimeType == MimeType.TAB) { //TODO use NUDE for this header writing
 						//write a single byte to keep the stream active
 						try {
-							if(headerReader.ready()) {
-								output.write(headerReader.read());
+							int nextByte = headerReader.read();
+							if(nextByte > -1) {
+								output.write(nextByte);
 								output.flush();
 							}
 						} catch (IOException e) {
@@ -168,9 +168,11 @@ public class SosAggregationService {
 				if (mimeType == MimeType.CSV || mimeType == MimeType.TAB) { //TODO use NUDE for this header writing
 					//write a single byte to keep the stream active
 					try {
-						while(headerReader.ready()) {
-							output.write(headerReader.read());
+						int nextByte = headerReader.read();
+						while(nextByte > -1) {
+							output.write(nextByte);
 							output.flush();
+							nextByte = headerReader.read();
 						}
 					} catch (IOException e) {
 						log.debug("Exception writing remaining header fragment", e);
