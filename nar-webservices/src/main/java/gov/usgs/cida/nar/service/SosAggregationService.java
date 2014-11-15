@@ -48,6 +48,10 @@ import org.joda.time.format.DateTimeFormat;
 public class SosAggregationService {
 	
 	private static final Logger log = Logger.getLogger(SosAggregationService.class);
+	
+	//determines how long we wait to check if SOS connectors are ready
+	//a higher wait time also helps with keeping output streams active by slowly streaming out bytes
+	private static final int WAIT_TIME_BETWEEN_SOS_REQUESTS = 1000; 
 
 	private static final String DATE_IN_COL = "DATE";
 	
@@ -142,7 +146,7 @@ public class SosAggregationService {
 					// TODO make sure isReady() will eventually be true
 					log.trace(String.format("Streams complete: {} of {}", ++numberReady, sosConnectors.size()));
 					try {
-						Thread.sleep(250);
+						Thread.sleep(WAIT_TIME_BETWEEN_SOS_REQUESTS);
 					}
 					catch (InterruptedException ex) {
 						log.debug(ex);
