@@ -19,6 +19,7 @@ import gov.usgs.cida.wfs.HttpComponentsWFSClient;
 import gov.usgs.cida.wfs.WFSClientInterface;
 import gov.usgs.webservices.framework.basic.MimeType;
 
+import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
 
@@ -38,6 +39,7 @@ import org.apache.log4j.Logger;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.CommonFactoryFinder;
+import org.geotools.feature.DefaultFeatureCollection;
 
 public class SiteInformationService {
 	
@@ -199,16 +201,7 @@ public class SiteInformationService {
 			log.error("Could not set up wfs connector", ex);
 		}
 		try {
-			SimpleFeatureCollection features = client.getFeatureCollection(
-					JNDISingleton.getInstance().getProperty(SITE_LAYER_JNDI_NAME), 
-					getFilter(siteType, stationId, state));
-			if(features != null) {
-				SimpleFeatureIterator iter = features.features();
-				while(iter.hasNext()) {
-					String site = iter.next().getAttribute(WFSConnector.WFS_SITE_ID_COL_NAME).toString();
-					stationIds.add(site);
-				}
-			}
+			stationIds = getStationIdsFromFeatureCollectoin(getStationFeatures(siteType, stationId, state));
 		} finally {
 			try {
 				client.close();
@@ -216,7 +209,71 @@ public class SiteInformationService {
 			}
 		}
 		
+		return stationIds;
+	}
+	
+	public static List<String> getStationIdsFromFeatureCollectoin(SimpleFeatureCollection features) throws IOException {
+		List<String> stationIds = new ArrayList<>();
+		
+		SimpleFeatureIterator iter = features.features();
+		while(iter.hasNext()) {
+			String site = iter.next().getAttribute(WFSConnector.WFS_SITE_ID_COL_NAME).toString();
+			stationIds.add(site);
+		}
 		
 		return stationIds;
+	}
+	
+	public static SimpleFeatureCollection getStationFeatures(final List<String> siteType,
+			final List<String> stationId,
+			final List<String> state) throws IOException {
+		SimpleFeatureCollection stations = null;
+		WFSClientInterface client = new HttpComponentsWFSClient();
+		try {
+			client.setupDatastoreFromEndpoint(JNDISingleton.getInstance().getProperty(SITE_INFO_URL_JNDI_NAME));
+		}
+		catch (IOException ex) {
+			log.error("Could not set up wfs connector", ex);
+		}
+		try {
+			SimpleFeatureCollection streaming = client.getFeatureCollection(
+					JNDISingleton.getInstance().getProperty(SITE_LAYER_JNDI_NAME), 
+					getFilter(siteType, stationId, state));
+			
+			//convert to NON streaming
+			DefaultFeatureCollection nonStreamed = new DefaultFeatureCollection();
+			
+			SimpleFeatureIterator iter = streaming.features();
+			while(iter.hasNext()) {
+				nonStreamed.add(iter.next());
+			}
+			
+			stations = nonStreamed;
+		} finally {
+			try {
+				client.close();
+			} catch (Exception e) {
+			}
+		}
+		
+		return stations;
+	}
+	
+	public static String getFlowIdFromQwId(SimpleFeatureCollection features, String qwId) {
+		String flowId = null;
+
+		if(features != null) {
+			SimpleFeatureIterator iter = features.features();
+			while(iter.hasNext()) {
+				SimpleFeature siteFeature = iter.next();
+				String site = siteFeature.getAttribute(WFSConnector.WFS_SITE_ID_COL_NAME).toString();
+				if(site.equals(qwId)) {
+					flowId = siteFeature.getAttribute(WFSConnector.WFS_FLOW_ID_COL_NAME).toString();
+					break;
+				}
+			}
+		}
+		
+		return flowId;
 	}
 }

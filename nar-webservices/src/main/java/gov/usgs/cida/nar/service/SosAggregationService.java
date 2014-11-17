@@ -3,6 +3,7 @@ package gov.usgs.cida.nar.service;
 import gov.usgs.cida.nar.connector.SOSClient;
 import gov.usgs.cida.nar.connector.SOSConnector;
 import gov.usgs.cida.nar.transform.PrefixStripTransform;
+import gov.usgs.cida.nar.transform.QwIdToFlowIdTransform;
 import gov.usgs.cida.nar.transform.ToDayDateTransform;
 import gov.usgs.cida.nar.transform.ToMonthNumberTransform;
 import gov.usgs.cida.nar.transform.WaterYearTransform;
@@ -41,6 +42,7 @@ import javax.xml.stream.XMLStreamException;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
+import org.geotools.data.simple.SimpleFeatureCollection;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 
@@ -56,7 +58,7 @@ public class SosAggregationService {
 	private static final String DATE_IN_COL = "DATE";
 	
 	private static final String SITE_QW_ID_IN_COL = "SITE_QW_ID";
-	//private static final String SITE_FLOW_ID_IN_COL = "SITE_FLOW_ID";
+	private static final String SITE_FLOW_ID_IN_COL = "SITE_FLOW_ID";
 
 	private static final String QW_CONSTIT_IN_COL = "CONSTIT";
 	private static final String QW_CONCENTRATION_IN_COL = "procedure"; 
@@ -102,17 +104,18 @@ public class SosAggregationService {
 	private DownloadType type;
 	private String sosUrl;
 	private String observedPropertyPrefix;
+	private final SimpleFeatureCollection siteFeatures;
 	
-	public SosAggregationService(DownloadType type, String sosUrl, String observedPropertyPrefix) {
+	public SosAggregationService(DownloadType type, String sosUrl, String observedPropertyPrefix, SimpleFeatureCollection siteFeatures) {
 		this.type = type;
 		this.sosUrl = sosUrl;
 		this.observedPropertyPrefix = observedPropertyPrefix;
+		this.siteFeatures = siteFeatures;
 	}
 	
 	public void streamData(final OutputStream output,
 			final MimeType mimeType,
 			final List<String> constituent,
-			final List<String> stationId,
 			final String startDateTime,
 			final String endDateTime,
 			final String header) throws IOException {
@@ -123,7 +126,7 @@ public class SosAggregationService {
 		final List<SOSConnector> sosConnectors = getSosConnectors(
 				sosUrl,
 				constituent,
-				stationId,
+				SiteInformationService.getStationIdsFromFeatureCollectoin(siteFeatures),
 				startDateTime,
 				endDateTime);
 		
@@ -310,6 +313,7 @@ public class SosAggregationService {
 		ColumnGrouping originals = prevSteps.get(prevSteps.size()-1).getExpectedColumns();
 		FilterStep renameColsStep = new FilterStep(new NudeFilterBuilder(originals)
 						.addFilterStage(new FilterStageBuilder(originals)
+							.addTransform(new SimpleColumn(SITE_FLOW_ID_IN_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), SITE_QW_ID_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), DATE_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(AN_CONC_FLOW_WEIGHTED_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), AN_CONC_FLOW_WEIGHTED_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(AN_CONC_MEAN_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), AN_CONC_MEAN_IN_COL) + 1)))
@@ -325,6 +329,7 @@ public class SosAggregationService {
 		List<Column> finalColList = new ArrayList<>();
 		List<Column> allCols = renameColsStep.getExpectedColumns().getColumns();
 		finalColList.add(allCols.get(indexOfCol(allCols, SITE_QW_ID_IN_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, SITE_FLOW_ID_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, QW_CONSTIT_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, WY_OUT_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, AN_MASS_OUT_COL)));
@@ -344,6 +349,7 @@ public class SosAggregationService {
 		//convert date to WY
 		steps.add(new FilterStep(new NudeFilterBuilder(finalCols)
 				.addFilterStage(new FilterStageBuilder(finalCols)
+				.addTransform(finalColList.get(indexOfCol(finalColList, SITE_FLOW_ID_IN_COL)), new QwIdToFlowIdTransform(finalColList.get(indexOfCol(finalColList, SITE_FLOW_ID_IN_COL)), siteFeatures))
 				.addTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL)), new WaterYearTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL))))
 				.buildFilterStage())
 		.buildFilter()));
@@ -366,6 +372,7 @@ public class SosAggregationService {
 		ColumnGrouping originals = prevSteps.get(prevSteps.size()-1).getExpectedColumns();
 		FilterStep renameColsStep = new FilterStep(new NudeFilterBuilder(originals)
 						.addFilterStage(new FilterStageBuilder(originals)
+							.addTransform(new SimpleColumn(SITE_FLOW_ID_IN_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), SITE_QW_ID_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), DATE_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(MONTH_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), DATE_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(MON_CONC_FLOW_WEIGHTED_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), MON_CONC_FLOW_WEIGHTED_IN_COL) + 1)))
@@ -380,6 +387,7 @@ public class SosAggregationService {
 		List<Column> finalColList = new ArrayList<>();
 		List<Column> allCols = renameColsStep.getExpectedColumns().getColumns();
 		finalColList.add(allCols.get(indexOfCol(allCols, SITE_QW_ID_IN_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, SITE_FLOW_ID_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, QW_CONSTIT_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, WY_OUT_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, MONTH_OUT_COL)));
@@ -398,6 +406,7 @@ public class SosAggregationService {
 		//convert date to WY
 		steps.add(new FilterStep(new NudeFilterBuilder(finalCols)
 				.addFilterStage(new FilterStageBuilder(finalCols)
+				.addTransform(finalColList.get(indexOfCol(finalColList, SITE_FLOW_ID_IN_COL)), new QwIdToFlowIdTransform(finalColList.get(indexOfCol(finalColList, SITE_FLOW_ID_IN_COL)), siteFeatures))
 				.addTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL)), new WaterYearTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL))))
 				.addTransform(finalColList.get(indexOfCol(finalColList, MONTH_OUT_COL)), new ToMonthNumberTransform(finalColList.get(indexOfCol(finalColList, MONTH_OUT_COL))))
 				.buildFilterStage())
@@ -421,6 +430,7 @@ public class SosAggregationService {
 		ColumnGrouping originals = prevSteps.get(prevSteps.size()-1).getExpectedColumns();
 		FilterStep renameColsStep = new FilterStep(new NudeFilterBuilder(originals)
 						.addFilterStage(new FilterStageBuilder(originals)
+							.addTransform(new SimpleColumn(SITE_FLOW_ID_IN_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), SITE_QW_ID_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), DATE_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(FLOW_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), FLOW_IN_COL) + 1)))
 							.buildFilterStage())
@@ -431,6 +441,7 @@ public class SosAggregationService {
 		List<Column> finalColList = new ArrayList<>();
 		List<Column> allCols = renameColsStep.getExpectedColumns().getColumns();
 		finalColList.add(allCols.get(indexOfCol(allCols, SITE_QW_ID_IN_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, SITE_FLOW_ID_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, WY_OUT_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, FLOW_OUT_COL)));
 		
@@ -444,6 +455,7 @@ public class SosAggregationService {
 		//convert date to WY
 		steps.add(new FilterStep(new NudeFilterBuilder(finalCols)
 				.addFilterStage(new FilterStageBuilder(finalCols)
+				.addTransform(finalColList.get(indexOfCol(finalColList, SITE_FLOW_ID_IN_COL)), new QwIdToFlowIdTransform(finalColList.get(indexOfCol(finalColList, SITE_FLOW_ID_IN_COL)), siteFeatures))
 				.addTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL)), new WaterYearTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL))))
 				.buildFilterStage())
 		.buildFilter()));
@@ -458,6 +470,7 @@ public class SosAggregationService {
 		ColumnGrouping originals = prevSteps.get(prevSteps.size()-1).getExpectedColumns();
 		FilterStep renameColsStep = new FilterStep(new NudeFilterBuilder(originals)
 						.addFilterStage(new FilterStageBuilder(originals)
+							.addTransform(new SimpleColumn(SITE_FLOW_ID_IN_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), SITE_QW_ID_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), DATE_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(MONTH_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), DATE_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(MON_FLOW_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), MON_FLOW_IN_COL) + 1)))
@@ -469,6 +482,7 @@ public class SosAggregationService {
 		List<Column> finalColList = new ArrayList<>();
 		List<Column> allCols = renameColsStep.getExpectedColumns().getColumns();
 		finalColList.add(allCols.get(indexOfCol(allCols, SITE_QW_ID_IN_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, SITE_FLOW_ID_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, WY_OUT_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, MONTH_OUT_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, MON_FLOW_OUT_COL)));
@@ -483,6 +497,7 @@ public class SosAggregationService {
 		//convert date to WY
 		steps.add(new FilterStep(new NudeFilterBuilder(finalCols)
 				.addFilterStage(new FilterStageBuilder(finalCols)
+				.addTransform(finalColList.get(indexOfCol(finalColList, SITE_FLOW_ID_IN_COL)), new QwIdToFlowIdTransform(finalColList.get(indexOfCol(finalColList, SITE_FLOW_ID_IN_COL)), siteFeatures))
 				.addTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL)), new WaterYearTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL))))
 				.addTransform(finalColList.get(indexOfCol(finalColList, MONTH_OUT_COL)), new ToMonthNumberTransform(finalColList.get(indexOfCol(finalColList, MONTH_OUT_COL))))
 				.buildFilterStage())
@@ -498,6 +513,7 @@ public class SosAggregationService {
 		ColumnGrouping originals = prevSteps.get(prevSteps.size()-1).getExpectedColumns();
 		FilterStep renameColsStep = new FilterStep(new NudeFilterBuilder(originals)
 						.addFilterStage(new FilterStageBuilder(originals)
+							.addTransform(new SimpleColumn(SITE_FLOW_ID_IN_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), SITE_QW_ID_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(FLOW_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), FLOW_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), DATE_IN_COL) + 1)))
 							.buildFilterStage())
@@ -508,6 +524,7 @@ public class SosAggregationService {
 		List<Column> finalColList = new ArrayList<>();
 		List<Column> allCols = renameColsStep.getExpectedColumns().getColumns();
 		finalColList.add(allCols.get(indexOfCol(allCols, SITE_QW_ID_IN_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, SITE_FLOW_ID_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, DATE_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, WY_OUT_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, FLOW_OUT_COL)));
@@ -522,6 +539,7 @@ public class SosAggregationService {
 		//convert dates to WY and day
 		steps.add(new FilterStep(new NudeFilterBuilder(finalCols)
 				.addFilterStage(new FilterStageBuilder(finalCols)
+				.addTransform(finalColList.get(indexOfCol(finalColList, SITE_FLOW_ID_IN_COL)), new QwIdToFlowIdTransform(finalColList.get(indexOfCol(finalColList, SITE_FLOW_ID_IN_COL)), siteFeatures))
 				.addTransform(finalColList.get(indexOfCol(finalColList, DATE_IN_COL)), new ToDayDateTransform(finalColList.get(indexOfCol(finalColList, DATE_IN_COL))))
 				.addTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL)), new WaterYearTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL))))
 				.buildFilterStage())
@@ -537,6 +555,7 @@ public class SosAggregationService {
 		ColumnGrouping originals = prevSteps.get(prevSteps.size()-1).getExpectedColumns();
 		FilterStep renameColsStep = new FilterStep(new NudeFilterBuilder(originals)
 			.addFilterStage(new FilterStageBuilder(originals)
+			.addTransform(new SimpleColumn(SITE_FLOW_ID_IN_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), SITE_QW_ID_IN_COL) + 1)))
 			.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), DATE_IN_COL) + 1)))
 			.addTransform(new SimpleColumn(QW_CONCENTRATION_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), QW_CONCENTRATION_IN_COL) + 1)))
 			.buildFilterStage())
@@ -547,6 +566,7 @@ public class SosAggregationService {
 		List<Column> finalColList = new ArrayList<>();
 		List<Column> allCols = renameColsStep.getExpectedColumns().getColumns();
 		finalColList.add(allCols.get(indexOfCol(allCols, SITE_QW_ID_IN_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, SITE_FLOW_ID_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, QW_CONSTIT_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, DATE_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, WY_OUT_COL)));
@@ -563,6 +583,7 @@ public class SosAggregationService {
 		//convert dates to WY and day
 		steps.add(new FilterStep(new NudeFilterBuilder(finalCols)
 				.addFilterStage(new FilterStageBuilder(finalCols)
+				.addTransform(finalColList.get(indexOfCol(finalColList, SITE_FLOW_ID_IN_COL)), new QwIdToFlowIdTransform(finalColList.get(indexOfCol(finalColList, SITE_FLOW_ID_IN_COL)), siteFeatures))
 				.addTransform(finalColList.get(indexOfCol(finalColList, DATE_IN_COL)), new ToDayDateTransform(finalColList.get(indexOfCol(finalColList, DATE_IN_COL))))
 				.addTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL)), new WaterYearTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL))))
 				.buildFilterStage())

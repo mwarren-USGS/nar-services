@@ -253,11 +253,11 @@ public class DownloadService {
 		new SosAggregationService(
 				downloadType, 
 				JNDISingleton.getInstance().getProperty(SOS_URL_JNDI_NAME),
-				OBSERVED_PROPERTY_PREFIX
+				OBSERVED_PROPERTY_PREFIX,
+				SiteInformationService.getStationFeatures(siteType, inStationId, state)
 				).streamData(zip, 
 					mimeType,
 					constituentsToUse,
-					SiteInformationService.getStationIds(siteType, inStationId, state),
 					startDateTime,
 					endDateTime,
 					headerText);
