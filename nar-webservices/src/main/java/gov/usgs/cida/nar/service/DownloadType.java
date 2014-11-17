@@ -64,7 +64,6 @@ public enum DownloadType {
 					"http://cida.usgs.gov/def/NAR/procedure/monthly_concentration_flow_weighted/REG_3",
 					"http://cida.usgs.gov/def/NAR/procedure/monthly_concentration_flow_weighted/REG_PRELIM",
 					"http://cida.usgs.gov/def/NAR/procedure/monthly_concentration_flow_weighted/REG_PRELIM_FINAL",
-					"http://cida.usgs.gov/def/NAR/procedure/monthly_flow",
 					"http://cida.usgs.gov/def/NAR/procedure/monthly_mass/COMP",
 					"http://cida.usgs.gov/def/NAR/procedure/monthly_mass/DAILY",
 					"http://cida.usgs.gov/def/NAR/procedure/monthly_mass/PRELIM",
@@ -93,6 +92,10 @@ public enum DownloadType {
 					"http://cida.usgs.gov/def/NAR/procedure/monthly_mass_upper_95/REG_PRELIM",
 					"http://cida.usgs.gov/def/NAR/procedure/monthly_mass_upper_95/REG_PRELIM_FINAL")
 			),
+	monthlyFlow("Monthly flow", 
+			Arrays.asList(
+					"http://cida.usgs.gov/def/NAR/procedure/monthly_flow"
+					)),
 	dailyFlow("Daily flow", 
 			Arrays.asList(
 					"http://cida.usgs.gov/def/NAR/procedure/daily_flow"
