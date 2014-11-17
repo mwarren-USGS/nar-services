@@ -4,7 +4,7 @@
     <parent>
         <groupId>gov.usgs.cida.nar</groupId>
         <artifactId>nar-services</artifactId>
-        <version>0.0.2</version>
+        <version>0.0.3-SNAPSHOT</version>
     </parent>
     <groupId>gov.usgs.cida.nar</groupId>
     <artifactId>nar-ncsosx</artifactId>
