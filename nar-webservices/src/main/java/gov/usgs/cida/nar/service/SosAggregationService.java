@@ -94,7 +94,8 @@ public class SosAggregationService {
 	private static final String MON_MASS_OUT_COL = "TONS_LOAD";
 	private static final String MON_FLOW_OUT_COL = "FLOW";
 	private static final String MON_MASS_LOWER_95_OUT_COL= "TONS_L95";
-	private static final String MONTH_OUT_COL= "TONS_L95";
+	
+	private static final String MONTH_OUT_COL= "MONTH";
 	
 	private static final String PROPERTY_PREFIX = "http://cida.usgs.gov/def/NAR/property/";
 	
@@ -214,6 +215,9 @@ public class SosAggregationService {
 				break;
 			case annualFlow:
 				steps.addAll(getAnnualFlowSteps(steps));
+				break;
+			case monthlyFlow:
+				steps.addAll(getMonthlyFlowSteps(steps));
 				break;
 			case dailyFlow:
 				steps.addAll(getDailyFlowSteps(steps));
@@ -368,7 +372,6 @@ public class SosAggregationService {
 							.addTransform(new SimpleColumn(MON_MASS_LOWER_95_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), MON_MASS_LOWER_95_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(MON_MASS_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), MON_MASS_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(MON_MASS_UPPER_95_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), MON_MASS_UPPER_95_IN_COL) + 1)))
-							.addTransform(new SimpleColumn(MON_FLOW_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), MON_FLOW_IN_COL) + 1)))
 							.buildFilterStage())
 				.buildFilter());
 		steps.add(renameColsStep);
@@ -384,7 +387,6 @@ public class SosAggregationService {
 		finalColList.add(allCols.get(indexOfCol(allCols, MON_MASS_LOWER_95_OUT_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, MON_MASS_UPPER_95_OUT_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, MON_CONC_FLOW_WEIGHTED_OUT_COL)));
-		finalColList.add(allCols.get(indexOfCol(allCols, MON_FLOW_OUT_COL)));
 		
 		ColumnGrouping finalCols = new ColumnGrouping(finalColList);
 		FilterStep removeUnusedColsStep = new FilterStep(new NudeFilterBuilder(finalCols)
@@ -443,6 +445,46 @@ public class SosAggregationService {
 		steps.add(new FilterStep(new NudeFilterBuilder(finalCols)
 				.addFilterStage(new FilterStageBuilder(finalCols)
 				.addTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL)), new WaterYearTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL))))
+				.buildFilterStage())
+		.buildFilter()));
+
+		return steps;
+	}
+
+	private List<PlanStep> getMonthlyFlowSteps(final List<PlanStep> prevSteps) {
+		List<PlanStep> steps = new ArrayList<>();
+		
+		//rename columns to specified headers
+		ColumnGrouping originals = prevSteps.get(prevSteps.size()-1).getExpectedColumns();
+		FilterStep renameColsStep = new FilterStep(new NudeFilterBuilder(originals)
+						.addFilterStage(new FilterStageBuilder(originals)
+							.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), DATE_IN_COL) + 1)))
+							.addTransform(new SimpleColumn(MONTH_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), DATE_IN_COL) + 1)))
+							.addTransform(new SimpleColumn(MON_FLOW_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), MON_FLOW_IN_COL) + 1)))
+							.buildFilterStage())
+				.buildFilter());
+		steps.add(renameColsStep);
+
+		//drop constit and modtype columns
+		List<Column> finalColList = new ArrayList<>();
+		List<Column> allCols = renameColsStep.getExpectedColumns().getColumns();
+		finalColList.add(allCols.get(indexOfCol(allCols, SITE_QW_ID_IN_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, WY_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, MONTH_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, MON_FLOW_OUT_COL)));
+		
+		ColumnGrouping finalCols = new ColumnGrouping(finalColList);
+		FilterStep removeUnusedColsStep = new FilterStep(new NudeFilterBuilder(finalCols)
+				.addFilterStage(new FilterStageBuilder(finalCols)
+						.buildFilterStage())
+				.buildFilter());
+		steps.add(removeUnusedColsStep);
+
+		//convert date to WY
+		steps.add(new FilterStep(new NudeFilterBuilder(finalCols)
+				.addFilterStage(new FilterStageBuilder(finalCols)
+				.addTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL)), new WaterYearTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL))))
+				.addTransform(finalColList.get(indexOfCol(finalColList, MONTH_OUT_COL)), new ToMonthNumberTransform(finalColList.get(indexOfCol(finalColList, MONTH_OUT_COL))))
 				.buildFilterStage())
 		.buildFilter()));
 

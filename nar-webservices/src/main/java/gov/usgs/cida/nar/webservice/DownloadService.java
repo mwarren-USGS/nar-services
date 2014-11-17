@@ -126,8 +126,22 @@ public class DownloadService {
 			}
 
 			if(ServiceParameterUtils.isMayLoadsRequested(dataType, qwDataType, siteType)) {
+				//include both may load and monthly flow
 				addAggregatedSosEntry(zip, 
 						DownloadType.mayLoad,
+						mimeType,
+						dataType,
+						qwDataType,
+						streamFlowType,
+						constituent,
+						siteType,
+						stationId,
+						state,
+						startDateTime,
+						endDateTime);
+
+				addAggregatedSosEntry(zip, 
+						DownloadType.monthlyFlow,
 						mimeType,
 						dataType,
 						qwDataType,
@@ -215,16 +229,20 @@ public class DownloadService {
 		
 		//if the download type is for flow, do not include requested constituents
 		List<String> constituentsToUse = new ArrayList<>();
-		if(downloadType.equals(DownloadType.annualFlow) || downloadType.equals(DownloadType.dailyFlow)) {
+		if(downloadType.equals(DownloadType.annualFlow) 
+				|| downloadType.equals(DownloadType.dailyFlow)
+				|| downloadType.equals(DownloadType.monthlyFlow)) {
 			constituentsToUse.add(FLOW_CONSTITUENT);
 		} else {
 			constituentsToUse.addAll(constituent);
 		}
 		
-		//if mayLoad, ALWAYS ensure MRB siteTypes
+		//if mayLoad/monthlyFlow, enforce MRB_SITE_TYPE if not selected
 		List<String> siteType = new ArrayList<>(inSiteType);
-		if(downloadType.equals(DownloadType.mayLoad) && !siteType.contains(SiteInformationService.MRB_SITE_TYPE_VAL)) {
-			siteType.add(SiteInformationService.MRB_SITE_TYPE_VAL);
+		if(downloadType.equals(DownloadType.mayLoad) || downloadType.equals(DownloadType.monthlyFlow)) {
+			if(!siteType.contains(SiteInformationService.MRB_SITE_TYPE_VAL)) { //ensure MRB site type is requested
+				siteType.add(SiteInformationService.MRB_SITE_TYPE_VAL);
+			}
 		}
 		
 		String headerText = null;
@@ -297,7 +315,9 @@ public class DownloadService {
 		}
 
 		if(ServiceParameterUtils.isMayLoadsRequested(dataType, qwDataType, siteType)) {
+			//include both may
 			appendDataTypeDescription(sb, DownloadType.mayLoad);
+			appendDataTypeDescription(sb, DownloadType.monthlyFlow);
 		}
 
 		if(ServiceParameterUtils.isDailyFlowRequested(dataType, streamFlowType)) {
