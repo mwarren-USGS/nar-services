@@ -1,6 +1,7 @@
 package gov.usgs.cida.nar.connector;
 
 import gov.usgs.cida.nar.resultset.SOSResultSet;
+import gov.usgs.cida.nar.transform.PlainStringNumberTransform;
 import gov.usgs.cida.nude.column.Column;
 import gov.usgs.cida.nude.column.ColumnGrouping;
 import gov.usgs.cida.nude.column.SimpleColumn;
@@ -43,15 +44,16 @@ public class SOSConnector implements IConnector, Closeable {
 	private SOSClient client;
 	private ColumnGrouping cg;
 	private SortedSet<OrderedFilter> filters;
+	private final Column valueColumn;
 	
 	private boolean isReady;
 
 
-	public SOSConnector(SOSClient client, SortedSet<OrderedFilter> filters, String valueColumn) {
+	public SOSConnector(SOSClient client, SortedSet<OrderedFilter> filters, String valueColumnName) {
 		this.client = client;
 		this.filters = filters;
 		this.isReady = false;
-		
+		this.valueColumn = new SimpleColumn(valueColumnName);
 		this.cg = makeColumnGrouping(valueColumn);
 	}
 
@@ -126,7 +128,11 @@ public class SOSConnector implements IConnector, Closeable {
 				})
 				.buildFilterStage();
 		
-		ResultSet numericPrimaryKeyResultSet = new FilteredResultSet(numericColumnResultSet, makePrimaryKeyStage);
+		FilterStage fixScientificNotationStage = new FilterStageBuilder(makePrimaryKeyStage.getOutputColumns())
+				.addTransform(valueColumn, new PlainStringNumberTransform(valueColumn))
+				.buildFilterStage();
+		
+		ResultSet numericPrimaryKeyResultSet = new FilteredResultSet(numericColumnResultSet, fixScientificNotationStage);
 		
 		return numericPrimaryKeyResultSet;
 	}
@@ -157,7 +163,7 @@ public class SOSConnector implements IConnector, Closeable {
 		return this.cg;
 	}
 	
-	private static ColumnGrouping makeColumnGrouping(String valueColumn) {
+	private static ColumnGrouping makeColumnGrouping(Column valueColumn) {
 		Column primaryKey = COMPOSITE_KEY_COL;
 		List<Column> allColumns = new LinkedList<>();
 		allColumns.add(primaryKey);
@@ -165,7 +171,7 @@ public class SOSConnector implements IConnector, Closeable {
 		allColumns.add(SOS_CONSTITUENT_COL);
 		allColumns.add(SOS_MOD_TYPE_COL);
 		allColumns.add(SOS_DATE_COL);
-		allColumns.add(new SimpleColumn(valueColumn));
+		allColumns.add(valueColumn);
 		return new ColumnGrouping(primaryKey, allColumns);
 	}
 	
