@@ -146,9 +146,12 @@ public class SosAggregationService {
 					for (IConnector conn : sosConnectors) {
 						boolean connReady = conn.isReady();
 						readyCheck = (readyCheck && connReady);
+						if (connReady) {
+							numberReady++;
+						}
 					}
 					// TODO make sure isReady() will eventually be true
-					log.trace(String.format("Streams complete: {} of {}", ++numberReady, sosConnectors.size()));
+					log.trace(String.format("Streams complete: {} of {}", numberReady, sosConnectors.size()));
 					try {
 						Thread.sleep(WAIT_TIME_BETWEEN_SOS_REQUESTS);
 					}
@@ -599,7 +602,6 @@ public class SosAggregationService {
 		
 		return steps;
 	}
-	
 	
 	/**
 	 * Helper function to get the index of a column with the given name
