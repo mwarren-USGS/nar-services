@@ -41,6 +41,7 @@ public class DownloadService {
 			"NH3", "NO23", "OP", "SI", "SSC", "TN", "TP"
 			);
 	private static final String FLOW_CONSTITUENT = "Q";
+	private static final String NEWLINE_CHAR = "\r\n";
 	
 	@GET
 	@Path("/bundle/zip")
@@ -57,6 +58,9 @@ public class DownloadService {
 			@QueryParam(START_DATE_PARAM) final String startDateTime,
 			@QueryParam(END_DATE_PARAM) final String endDateTime,
 			@Context HttpServletResponse response) throws NamingException, IOException {
+		
+		//TODO validate parameters here (try to throw errors/exceptions before we start zip stream)
+		
 		LOG.debug("Stream full zipped bundle started");
 		
 		final MimeType mimeType = MimeType.lookup(mimeTypeParam);
@@ -122,8 +126,22 @@ public class DownloadService {
 			}
 
 			if(ServiceParameterUtils.isMayLoadsRequested(dataType, qwDataType, siteType)) {
+				//include both may load and monthly flow
 				addAggregatedSosEntry(zip, 
 						DownloadType.mayLoad,
+						mimeType,
+						dataType,
+						qwDataType,
+						streamFlowType,
+						constituent,
+						siteType,
+						stationId,
+						state,
+						startDateTime,
+						endDateTime);
+
+				addAggregatedSosEntry(zip, 
+						DownloadType.monthlyFlow,
 						mimeType,
 						dataType,
 						qwDataType,
@@ -211,16 +229,20 @@ public class DownloadService {
 		
 		//if the download type is for flow, do not include requested constituents
 		List<String> constituentsToUse = new ArrayList<>();
-		if(downloadType.equals(DownloadType.annualFlow) || downloadType.equals(DownloadType.dailyFlow)) {
+		if(downloadType.equals(DownloadType.annualFlow) 
+				|| downloadType.equals(DownloadType.dailyFlow)
+				|| downloadType.equals(DownloadType.monthlyFlow)) {
 			constituentsToUse.add(FLOW_CONSTITUENT);
 		} else {
 			constituentsToUse.addAll(constituent);
 		}
 		
-		//if mayLoad, ALWAYS ensure MRB siteTypes
+		//if mayLoad/monthlyFlow, enforce MRB_SITE_TYPE if not selected
 		List<String> siteType = new ArrayList<>(inSiteType);
-		if(downloadType.equals(DownloadType.mayLoad) && !siteType.contains(SiteInformationService.MRB_SITE_TYPE_VAL)) {
-			siteType.add(SiteInformationService.MRB_SITE_TYPE_VAL);
+		if(downloadType.equals(DownloadType.mayLoad) || downloadType.equals(DownloadType.monthlyFlow)) {
+			if(!siteType.contains(SiteInformationService.MRB_SITE_TYPE_VAL)) { //ensure MRB site type is requested
+				siteType.add(SiteInformationService.MRB_SITE_TYPE_VAL);
+			}
 		}
 		
 		String headerText = null;
@@ -231,11 +253,11 @@ public class DownloadService {
 		new SosAggregationService(
 				downloadType, 
 				JNDISingleton.getInstance().getProperty(SOS_URL_JNDI_NAME),
-				OBSERVED_PROPERTY_PREFIX
+				OBSERVED_PROPERTY_PREFIX,
+				SiteInformationService.getStationFeatures(siteType, inStationId, state)
 				).streamData(zip, 
 					mimeType,
 					constituentsToUse,
-					SiteInformationService.getStationIds(siteType, inStationId, state),
 					startDateTime,
 					endDateTime,
 					headerText);
@@ -264,7 +286,8 @@ public class DownloadService {
 		StringBuffer sb = new StringBuffer();
 		
 		//List service criteria
-		sb.append("Request criteria provided\n");
+		sb.append("Request criteria provided");
+		sb.append(NEWLINE_CHAR);
 		prettyPrintParamList(sb, Arrays.asList(mimeType.name()), DownloadServiceParameters.MIME_TYPE_PARAM);
 		prettyPrintParamList(sb, dataType, DownloadServiceParameters.DATA_TYPE_PARAM);
 		prettyPrintParamList(sb, qwDataType, DownloadServiceParameters.QW_DATA_TYPE_PARAM);
@@ -275,7 +298,8 @@ public class DownloadService {
 		prettyPrintParamList(sb, state, DownloadServiceParameters.STATE_PARAM);
 		prettyPrintParamList(sb, Arrays.asList(startDateTime), DownloadServiceParameters.START_DATE_PARAM);
 		prettyPrintParamList(sb, Arrays.asList(endDateTime), DownloadServiceParameters.END_DATE_PARAM);
-		sb.append("\n\n");
+		sb.append(NEWLINE_CHAR);
+		sb.append(NEWLINE_CHAR);
 		
 		//List data headers which match request
 		if(ServiceParameterUtils.isSiteInformationRequested(dataType)) {
@@ -291,7 +315,9 @@ public class DownloadService {
 		}
 
 		if(ServiceParameterUtils.isMayLoadsRequested(dataType, qwDataType, siteType)) {
+			//include both may
 			appendDataTypeDescription(sb, DownloadType.mayLoad);
+			appendDataTypeDescription(sb, DownloadType.monthlyFlow);
 		}
 
 		if(ServiceParameterUtils.isDailyFlowRequested(dataType, streamFlowType)) {
@@ -307,9 +333,10 @@ public class DownloadService {
 	
 	private void appendDataTypeDescription(StringBuffer sb, DownloadType t) {
 		sb.append(t.getTitle());
-		sb.append("\n");
+		sb.append(NEWLINE_CHAR);
 		sb.append(DescriptionLoaderSingleton.getDescription(t.getTitle()));
-		sb.append("\n\n");
+		sb.append(NEWLINE_CHAR);
+		sb.append(NEWLINE_CHAR);
 	}
 	
 	private void prettyPrintParamList(StringBuffer sb, List<String> values, String name) {
@@ -322,7 +349,7 @@ public class DownloadService {
 				sb.append(", ");
 			}
 			sb.delete(sb.length() - 2, sb.length());
-			sb.append("\n");
+			sb.append(NEWLINE_CHAR);
 		}
 	}
 }

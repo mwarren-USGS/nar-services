@@ -2,11 +2,12 @@ package gov.usgs.cida.nar.util;
 
 import gov.usgs.cida.nar.service.DataType;
 import gov.usgs.cida.nar.service.DownloadType;
+import gov.usgs.cida.nar.service.SiteInformationService;
 
 import java.util.List;
 
 public class ServiceParameterUtils {
-	public static String MRB_SITE_TYPE = "MRB";
+	public static String MRB_SITE_TYPE = SiteInformationService.MRB_SITE_TYPE_VAL;
 	public static String CSV_DELIMITER = ",";
 	public static String TSV_DELIMITER = "\t";
 	

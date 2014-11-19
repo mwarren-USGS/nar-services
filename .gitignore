@@ -13,3 +13,5 @@ nb-configuration.xml
 .settings
 .classpath
 target
+/nar-webservices/src/main/webapp/META-INF/
+catalina.base_IS_UNDEFINED/
