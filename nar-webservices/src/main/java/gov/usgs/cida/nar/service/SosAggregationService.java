@@ -2,6 +2,7 @@ package gov.usgs.cida.nar.service;
 
 import gov.usgs.cida.nar.connector.SOSClient;
 import gov.usgs.cida.nar.connector.SOSConnector;
+import gov.usgs.cida.nar.transform.FourDigitYearTransform;
 import gov.usgs.cida.nar.transform.PrefixStripTransform;
 import gov.usgs.cida.nar.transform.QwIdToFlowIdTransform;
 import gov.usgs.cida.nar.transform.ToDayDateTransform;
@@ -501,7 +502,7 @@ public class SosAggregationService {
 		steps.add(new FilterStep(new NudeFilterBuilder(finalCols)
 				.addFilterStage(new FilterStageBuilder(finalCols)
 				.addTransform(finalColList.get(indexOfCol(finalColList, SITE_FLOW_ID_IN_COL)), new QwIdToFlowIdTransform(finalColList.get(indexOfCol(finalColList, SITE_FLOW_ID_IN_COL)), siteFeatures))
-				.addTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL)), new WaterYearTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL))))
+				.addTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL)), new FourDigitYearTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL))))
 				.addTransform(finalColList.get(indexOfCol(finalColList, MONTH_OUT_COL)), new ToMonthNumberTransform(finalColList.get(indexOfCol(finalColList, MONTH_OUT_COL))))
 				.buildFilterStage())
 		.buildFilter()));
