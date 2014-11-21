@@ -2,6 +2,7 @@ package gov.usgs.cida.nar.service;
 
 import gov.usgs.cida.nar.connector.SOSClient;
 import gov.usgs.cida.nar.connector.SOSConnector;
+import gov.usgs.cida.nar.transform.FourDigitYearTransform;
 import gov.usgs.cida.nar.transform.PrefixStripTransform;
 import gov.usgs.cida.nar.transform.QwIdToFlowIdTransform;
 import gov.usgs.cida.nar.transform.ToDayDateTransform;
@@ -70,7 +71,6 @@ public class SosAggregationService {
 	private static final String AN_MASS_LOWER_95_IN_COL = "annual_mass_lower_95";
 	private static final String AN_MASS_IN_COL = "annual_mass";
 	private static final String AN_YIELD_IN_COL = "annual_yield";
-	private static final String AN_CONC_MEAN_IN_COL = "annual_concentration_mean";
 	private static final String AN_CONC_FLOW_WEIGHTED_IN_COL = "annual_concentration_flow_weighted";
 	
 	private static final String MON_CONC_FLOW_WEIGHTED_IN_COL = "monthly_concentration_flow_weighted";
@@ -83,12 +83,12 @@ public class SosAggregationService {
 	private static final String FLOW_OUT_COL = "FLOW";
 
 	private static final String QW_CONCENTRATION_OUT_COL = "CONCENTRATION"; 
+	private static final String MOD_TYPE_OUT_COL = "MODTYPE"; 
 
 	private static final String AN_MASS_UPPER_95_OUT_COL = "TONS_U95";
 	private static final String AN_MASS_LOWER_95_OUT_COL = "TONS_L95";
 	private static final String AN_MASS_OUT_COL = "TONS_LOAD";
 	private static final String AN_YIELD_OUT_COL = "YIELD";
-	private static final String AN_CONC_MEAN_OUT_COL = "MEAN_C";
 	private static final String AN_CONC_FLOW_WEIGHTED_OUT_COL = "FWC";
 
 	private static final String MON_CONC_FLOW_WEIGHTED_OUT_COL = "FWC";
@@ -319,7 +319,6 @@ public class SosAggregationService {
 							.addTransform(new SimpleColumn(SITE_FLOW_ID_IN_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), SITE_QW_ID_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), DATE_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(AN_CONC_FLOW_WEIGHTED_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), AN_CONC_FLOW_WEIGHTED_IN_COL) + 1)))
-							.addTransform(new SimpleColumn(AN_CONC_MEAN_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), AN_CONC_MEAN_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(AN_MASS_LOWER_95_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), AN_MASS_LOWER_95_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(AN_MASS_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), AN_MASS_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(AN_MASS_UPPER_95_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), AN_MASS_UPPER_95_IN_COL) + 1)))
@@ -328,18 +327,18 @@ public class SosAggregationService {
 				.buildFilter());
 		steps.add(renameColsStep);
 		
-		//drop constit and modtype columns
+		//drop columns
 		List<Column> finalColList = new ArrayList<>();
 		List<Column> allCols = renameColsStep.getExpectedColumns().getColumns();
 		finalColList.add(allCols.get(indexOfCol(allCols, SITE_QW_ID_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, SITE_FLOW_ID_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, QW_CONSTIT_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, WY_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, MOD_TYPE_OUT_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, AN_MASS_OUT_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, AN_MASS_LOWER_95_OUT_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, AN_MASS_UPPER_95_OUT_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, AN_CONC_FLOW_WEIGHTED_OUT_COL)));
-		finalColList.add(allCols.get(indexOfCol(allCols, AN_CONC_MEAN_OUT_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, AN_YIELD_OUT_COL)));
 		
 		ColumnGrouping finalCols = new ColumnGrouping(finalColList);
@@ -394,6 +393,7 @@ public class SosAggregationService {
 		finalColList.add(allCols.get(indexOfCol(allCols, QW_CONSTIT_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, WY_OUT_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, MONTH_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, MOD_TYPE_OUT_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, MON_MASS_OUT_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, MON_MASS_LOWER_95_OUT_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, MON_MASS_UPPER_95_OUT_COL)));
@@ -501,7 +501,7 @@ public class SosAggregationService {
 		steps.add(new FilterStep(new NudeFilterBuilder(finalCols)
 				.addFilterStage(new FilterStageBuilder(finalCols)
 				.addTransform(finalColList.get(indexOfCol(finalColList, SITE_FLOW_ID_IN_COL)), new QwIdToFlowIdTransform(finalColList.get(indexOfCol(finalColList, SITE_FLOW_ID_IN_COL)), siteFeatures))
-				.addTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL)), new WaterYearTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL))))
+				.addTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL)), new FourDigitYearTransform(finalColList.get(indexOfCol(finalColList, WY_OUT_COL))))
 				.addTransform(finalColList.get(indexOfCol(finalColList, MONTH_OUT_COL)), new ToMonthNumberTransform(finalColList.get(indexOfCol(finalColList, MONTH_OUT_COL))))
 				.buildFilterStage())
 		.buildFilter()));
