@@ -100,6 +100,8 @@ public class RemarkedValueTransformTest {
 		log.debug("transform");
 		TableRow row = new TableRow(valueColumn, "<0.1");
 		TableRow row2 = new TableRow(valueColumn, "9.1");
+		TableRow row3 = new TableRow(valueColumn, "<9. 1"); //white space in middle of value
+		TableRow row4 = new TableRow(valueColumn, " < 9.1"); //white space supported
 		
 		RemarkedValueTransform valueInstance = new RemarkedValueTransform(valueColumn, false);
 		RemarkedValueTransform remarkInstance = new RemarkedValueTransform(valueColumn, true);
@@ -109,6 +111,13 @@ public class RemarkedValueTransformTest {
 
 		assertEquals("9.1", valueInstance.transform(row2));
 		assertEquals("", remarkInstance.transform(row2));
+		
+		//returns empty string for malformed input
+		assertEquals("", valueInstance.transform(row3));
+		assertEquals("", remarkInstance.transform(row3));
+
+		assertEquals("9.1", valueInstance.transform(row4));
+		assertEquals("<", remarkInstance.transform(row4));
 	}
 
 	/**

@@ -17,7 +17,8 @@ import org.slf4j.LoggerFactory;
 public class RemarkedValueTransform implements ColumnTransform {
 	private static final Logger log = LoggerFactory.getLogger(RemarkedValueTransform.class);
 
-	private static final Pattern REMARK_PATTERN = Pattern.compile("^\\s*[<>]*"); 
+	private static final String NWIS_REMARKS_REGEX = "<>EAVSRMNU";
+	private static final Pattern REMARK_PATTERN = Pattern.compile("^\\s*([" + NWIS_REMARKS_REGEX + "]?)\\s*([^" + NWIS_REMARKS_REGEX + "\\s]+)\\s*$"); 
 	
 	protected final Column inColumn;
 	
@@ -36,24 +37,19 @@ public class RemarkedValueTransform implements ColumnTransform {
 		String result = null;
 		if(null != row) {
 			String in = row.getValue(inColumn);
-			
-			try {
-				if(getRemark) {
-					result = "";
-
-					Matcher m = REMARK_PATTERN.matcher(in);
-					if(m.find()) {
-						result = m.group();
-					}
-				} else {
-					result = in.replaceAll(REMARK_PATTERN.pattern(), "");
-				}
-			} catch (Exception e) {
-				log.trace("Could not parse incoming value", e);
+			log.debug("Matching " + in);
+			String remark = "";
+			String value = "";
+			Matcher m = REMARK_PATTERN.matcher(in);
+			if(m.find()) {
+				remark = m.group(1);
+				value = m.group(2);
 			}
 			
-			if (null == result) {
-				result = in;
+			if(getRemark) {
+				result = remark;
+			} else {
+				result = value;
 			}
 		}
 		
