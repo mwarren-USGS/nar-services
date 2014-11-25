@@ -5,6 +5,7 @@ import gov.usgs.cida.nar.connector.SOSConnector;
 import gov.usgs.cida.nar.transform.FourDigitYearTransform;
 import gov.usgs.cida.nar.transform.PrefixStripTransform;
 import gov.usgs.cida.nar.transform.QwIdToFlowIdTransform;
+import gov.usgs.cida.nar.transform.RemarkedValueTransform;
 import gov.usgs.cida.nar.transform.ToDayDateTransform;
 import gov.usgs.cida.nar.transform.ToMonthNumberTransform;
 import gov.usgs.cida.nar.transform.WaterYearTransform;
@@ -63,7 +64,6 @@ public class SosAggregationService {
 
 	private static final String QW_CONSTIT_IN_COL = "CONSTIT";
 	private static final String QW_CONCENTRATION_IN_COL = "procedure"; 
-	//private static final String QW_REMARK_IN_COL = "REMARK";
 
 	private static final String FLOW_IN_COL = "procedure"; 
 	
@@ -84,6 +84,7 @@ public class SosAggregationService {
 
 	private static final String QW_CONCENTRATION_OUT_COL = "CONCENTRATION"; 
 	private static final String MOD_TYPE_OUT_COL = "MODTYPE"; 
+	private static final String REMARK_OUT_COL = "REMARK";
 
 	private static final String AN_MASS_UPPER_95_OUT_COL = "TONS_U95";
 	private static final String AN_MASS_LOWER_95_OUT_COL = "TONS_L95";
@@ -561,6 +562,7 @@ public class SosAggregationService {
 			.addTransform(new SimpleColumn(SITE_FLOW_ID_IN_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), SITE_QW_ID_IN_COL) + 1)))
 			.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), DATE_IN_COL) + 1)))
 			.addTransform(new SimpleColumn(QW_CONCENTRATION_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), QW_CONCENTRATION_IN_COL) + 1)))
+			.addTransform(new SimpleColumn(REMARK_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), QW_CONCENTRATION_IN_COL) + 1)))
 			.buildFilterStage())
 			.buildFilter());
 		steps.add(renameColsStep);
@@ -574,6 +576,7 @@ public class SosAggregationService {
 		finalColList.add(allCols.get(indexOfCol(allCols, DATE_IN_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, WY_OUT_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, QW_CONCENTRATION_OUT_COL)));
+		finalColList.add(allCols.get(indexOfCol(allCols, REMARK_OUT_COL)));
 		//TODO NEED REMARK
 		
 		ColumnGrouping finalCols = new ColumnGrouping(finalColList);
@@ -597,6 +600,16 @@ public class SosAggregationService {
 				.addFilterStage(new FilterStageBuilder(finalCols)
 				.addTransform(finalColList.get(indexOfCol(finalColList, QW_CONSTIT_IN_COL)), 
 						new PrefixStripTransform(finalColList.get(indexOfCol(finalColList, QW_CONSTIT_IN_COL)), PROPERTY_PREFIX))
+				.buildFilterStage())
+		.buildFilter()));
+		
+		//Strip out remark from value field and value from remark field
+		steps.add(new FilterStep(new NudeFilterBuilder(finalCols)
+				.addFilterStage(new FilterStageBuilder(finalCols)
+				.addTransform(finalColList.get(indexOfCol(finalColList, QW_CONCENTRATION_OUT_COL)), 
+						new RemarkedValueTransform(finalColList.get(indexOfCol(finalColList, QW_CONCENTRATION_OUT_COL)), false))
+				.addTransform(finalColList.get(indexOfCol(finalColList, REMARK_OUT_COL)), 
+						new RemarkedValueTransform(finalColList.get(indexOfCol(finalColList, REMARK_OUT_COL)), true))
 				.buildFilterStage())
 		.buildFilter()));
 		
