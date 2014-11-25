@@ -6,6 +6,7 @@ import java.util.Iterator;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.geotools.xlink.XLINK;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -122,7 +123,8 @@ public class ObservationCollection implements Iterable, Iterator, Closeable {
 					}
 					if (isElement(Observation.VALUE_ELEMENT)) {
 						if (ob != null) {
-							ob.value(reader.getElementText());
+							String elementText = reader.getElementText();
+							ob.value(StringEscapeUtils.unescapeXml(elementText));
 						}
 					}
 					break;
