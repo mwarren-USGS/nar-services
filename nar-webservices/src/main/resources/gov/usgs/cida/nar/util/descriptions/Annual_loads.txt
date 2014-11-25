@@ -9,5 +9,4 @@
 #TONS_L95 Lower 95% confidence interval of the water-quality load, in tons
 #TONS_U95 Upper 95% confidence interval of the water-quality load, in tons
 #FWC Annual flow-weighted concentrations, in milligrams per liter
-#MEAN_C  Mean annual concentration, in milligrams per liter, note that this value is blank if samples are not collected at least quarterly during the specified water year
 #YIELD  Yield, in tons per square mile

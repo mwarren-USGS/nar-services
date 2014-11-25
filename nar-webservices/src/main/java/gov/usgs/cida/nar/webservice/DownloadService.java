@@ -126,32 +126,38 @@ public class DownloadService {
 			}
 
 			if(ServiceParameterUtils.isMayLoadsRequested(dataType, qwDataType, siteType)) {
-				//include both may load and monthly flow
-				addAggregatedSosEntry(zip, 
-						DownloadType.mayLoad,
-						mimeType,
-						dataType,
-						qwDataType,
-						streamFlowType,
-						constituent,
-						siteType,
-						stationId,
-						state,
-						startDateTime,
-						endDateTime);
-
-				addAggregatedSosEntry(zip, 
-						DownloadType.monthlyFlow,
-						mimeType,
-						dataType,
-						qwDataType,
-						streamFlowType,
-						constituent,
-						siteType,
-						stationId,
-						state,
-						startDateTime,
-						endDateTime);
+				//only do these if one of the sites is actually MRB
+				if(SiteInformationService.containsMrbSite(
+						SiteInformationService.getStationFeatures(siteType,	stationId,state)
+						)
+				) {
+					//include both may load and monthly flow
+					addAggregatedSosEntry(zip, 
+							DownloadType.mayLoad,
+							mimeType,
+							dataType,
+							qwDataType,
+							streamFlowType,
+							constituent,
+							siteType,
+							stationId,
+							state,
+							startDateTime,
+							endDateTime);
+	
+					addAggregatedSosEntry(zip, 
+							DownloadType.monthlyFlow,
+							mimeType,
+							dataType,
+							qwDataType,
+							streamFlowType,
+							constituent,
+							siteType,
+							stationId,
+							state,
+							startDateTime,
+							endDateTime);
+				}
 			}
 
 			if(ServiceParameterUtils.isDailyFlowRequested(dataType, streamFlowType)) {
@@ -282,7 +288,7 @@ public class DownloadService {
 			final List<String> stationId,
 			final List<String> state,
 			final String startDateTime,
-			final String endDateTime) {
+			final String endDateTime) throws IOException {
 		StringBuffer sb = new StringBuffer();
 		
 		//List service criteria
@@ -315,9 +321,15 @@ public class DownloadService {
 		}
 
 		if(ServiceParameterUtils.isMayLoadsRequested(dataType, qwDataType, siteType)) {
-			//include both may
-			appendDataTypeDescription(sb, DownloadType.mayLoad);
-			appendDataTypeDescription(sb, DownloadType.monthlyFlow);
+			//only do these if one of the sites is actually MRB
+			if(SiteInformationService.containsMrbSite(
+					SiteInformationService.getStationFeatures(siteType,	stationId, state)
+					)
+			) {
+				//include both may
+				appendDataTypeDescription(sb, DownloadType.mayLoad);
+				appendDataTypeDescription(sb, DownloadType.monthlyFlow);
+			}
 		}
 
 		if(ServiceParameterUtils.isDailyFlowRequested(dataType, streamFlowType)) {

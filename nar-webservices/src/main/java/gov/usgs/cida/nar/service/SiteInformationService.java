@@ -224,9 +224,16 @@ public class SiteInformationService {
 		return stationIds;
 	}
 	
-	public static SimpleFeatureCollection getStationFeatures(final List<String> siteType,
+	public static SimpleFeatureCollection getStationFeatures(final List<String> inSiteType,
 			final List<String> stationId,
 			final List<String> state) throws IOException {
+		
+		//copy site types to remove MRB site type 
+		List<String> siteType = new ArrayList<>(inSiteType);
+		if(siteType.contains(MRB_SITE_TYPE_VAL)) {
+			siteType.remove(MRB_SITE_TYPE_VAL);
+		}
+		
 		SimpleFeatureCollection stations = null;
 		WFSClientInterface client = new HttpComponentsWFSClient();
 		try {
@@ -276,4 +283,22 @@ public class SiteInformationService {
 		
 		return flowId;
 	}
-}
+	
+	public static boolean containsMrbSite(SimpleFeatureCollection features) {
+		boolean result = false;
+		
+		if(features != null) {
+			SimpleFeatureIterator iter = features.features();
+			while(iter.hasNext()) {
+				SimpleFeature siteFeature = iter.next();
+				String site = siteFeature.getAttribute(WFSConnector.WFS_MS_SITE_COL_NAME).toString();
+				if(site.equals(MS_SITE_VAL)) {
+					result = true;
+					break;
+				}
+			}
+		}
+		
+		return result;
+	}
+ }
