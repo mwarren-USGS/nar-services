@@ -1,8 +1,12 @@
 package gov.usgs.cida.nar.transform;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import gov.usgs.cida.nude.column.Column;
 import gov.usgs.cida.nude.filter.ColumnTransform;
 import gov.usgs.cida.nude.resultset.inmemory.TableRow;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,7 +17,7 @@ import org.slf4j.LoggerFactory;
 public class RemarkedValueTransform implements ColumnTransform {
 	private static final Logger log = LoggerFactory.getLogger(RemarkedValueTransform.class);
 
-	private static final String[] REMARKS = new String[]{ "<", ">" };
+	private static final Pattern REMARK_PATTERN = Pattern.compile("^\\s*[<>]*"); 
 	
 	protected final Column inColumn;
 	
@@ -30,22 +34,19 @@ public class RemarkedValueTransform implements ColumnTransform {
 	@Override
 	public String transform(TableRow row) {
 		String result = null;
-		
 		if(null != row) {
 			String in = row.getValue(inColumn);
+			
 			try {
 				if(getRemark) {
-					result = ""; //assume no remark contained
-					for(String remark : REMARKS) {
-						if(in.contains(remark)) {
-							result = remark;
-						}
+					result = "";
+
+					Matcher m = REMARK_PATTERN.matcher(in);
+					if(m.find()) {
+						result = m.group();
 					}
 				} else {
-					result = in;
-					for(String remark : REMARKS) {
-						result = result.replace(remark, "");
-					}
+					result = in.replaceAll(REMARK_PATTERN.pattern(), "");
 				}
 			} catch (Exception e) {
 				log.trace("Could not parse incoming value", e);
