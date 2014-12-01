@@ -45,7 +45,7 @@ public class ServiceParameterUtilsTest {
 		assertTrue("Discrete QW requested if water quality data type requested with a QW data type filters that include discrete QW", 
 				ServiceParameterUtils.isDiscreteQwRequested(
 						Arrays.asList(new String[] { DataType.waterQuality.name() }), 
-						Arrays.asList(new String[] { DownloadType.annualLoad.name(), DownloadType.discreteQw.name() })
+						Arrays.asList(new String[] { DownloadType.annualLoad.name(), DownloadType.sampleConcentrations.name() })
 				)
 			);
 	}
@@ -62,7 +62,7 @@ public class ServiceParameterUtilsTest {
 				ServiceParameterUtils.isAnnualLoadsRequested(Arrays.asList(new String[] { DataType.waterQuality.name() }), Arrays.asList(new String[] { DownloadType.mayLoad.name() })));
 
 		assertTrue("Annual Load requested if water quality data type requested with a QW data type filters that include Annual Load", 
-				ServiceParameterUtils.isAnnualLoadsRequested(Arrays.asList(new String[] { DataType.waterQuality.name() }), Arrays.asList(new String[] { DownloadType.annualLoad.name(), DownloadType.discreteQw.name() })));
+				ServiceParameterUtils.isAnnualLoadsRequested(Arrays.asList(new String[] { DataType.waterQuality.name() }), Arrays.asList(new String[] { DownloadType.annualLoad.name(), DownloadType.sampleConcentrations.name() })));
 	}
 	
 	@Test

@@ -229,7 +229,7 @@ public class SosAggregationService {
 			case dailyFlow:
 				steps.addAll(getDailyFlowSteps(steps));
 				break;
-			case discreteQw:
+			case sampleConcentrations:
 				steps.addAll(getDiscreteQwSteps(steps));
 				break;
 			default: //nothing
