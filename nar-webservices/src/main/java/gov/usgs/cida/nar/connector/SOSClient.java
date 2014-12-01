@@ -1,5 +1,8 @@
 package gov.usgs.cida.nar.connector;
 
+import gov.usgs.cida.sos.DataAvailabilityMember;
+import gov.usgs.cida.sos.EndOfXmlStreamException;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -9,11 +12,15 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.UUID;
+
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.xml.stream.FactoryConfigurationError;
+import javax.xml.stream.XMLStreamException;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.glassfish.jersey.client.ClientConfig;
@@ -63,6 +70,30 @@ public class SOSClient extends Thread implements AutoCloseable {
 		FileUtils.deleteQuietly(file);
 	}
 	
+	public List<DataAvailabilityMember> getDataAvailability() {
+		List<DataAvailabilityMember> dataAvailabilityMembers = null;
+		
+		ClientConfig clientConfig = new ClientConfig();
+		clientConfig.property(ClientProperties.CONNECT_TIMEOUT, 10000);
+		clientConfig.property(ClientProperties.READ_TIMEOUT, 60000);
+		Client client = ClientBuilder.newClient(clientConfig);
+
+		InputStream returnStream = null;
+		try {
+			Response response = client.target(this.sosEndpoint)
+				.path("")
+				.request(new MediaType[]{MediaType.APPLICATION_XML_TYPE})
+				.post(buildGetDataAvailability(observedProperties, procedures));
+			returnStream = response.readEntity(InputStream.class);
+			dataAvailabilityMembers = DataAvailabilityMember.buildListFromXmlInputStream(returnStream);
+		} catch (EndOfXmlStreamException | XMLStreamException | FactoryConfigurationError e) {
+			log.debug("error parsing GetDataAvailability response", e);
+		} finally {
+			IOUtils.closeQuietly(returnStream);
+		}
+		return dataAvailabilityMembers;
+	}
+	
 	public InputStream readFile() {
 		InputStream fileInput = null;
 		try {
@@ -79,7 +110,7 @@ public class SOSClient extends Thread implements AutoCloseable {
 		}
 		ClientConfig clientConfig = new ClientConfig();
 		clientConfig.property(ClientProperties.CONNECT_TIMEOUT, 10000);
-		clientConfig.property(ClientProperties.READ_TIMEOUT, 60000);
+		clientConfig.property(ClientProperties.READ_TIMEOUT, 180000);
 		Client client = ClientBuilder.newClient(clientConfig);
 		// TODO do this proper
 		
@@ -154,6 +185,28 @@ public class SOSClient extends Thread implements AutoCloseable {
 		}
 		builder.append("<sos:responseFormat>http://www.opengis.net/waterml/2.0</sos:responseFormat>")
 				.append("</sos:GetObservation>");
+		return Entity.xml(builder.toString());
+	}
+	
+	private static Entity buildGetDataAvailability(List<String> observedProperties,
+			List<String> procedures) {
+		StringBuilder builder = new StringBuilder();
+		builder.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
+			.append("<gda:GetDataAvailability service=\"SOS\" version=\"2.0.0\" ")
+		    .append("xmlns:gda=\"http://www.opengis.net/sosgda/1.0\" ")
+		    .append("xmlns:swes=\"http://www.opengis.net/swes/2.0\" ")
+		    .append("xmlns:fes=\"http://www.opengis.net/fes/2.0\" ")
+		    .append("xmlns:gml=\"http://www.opengis.net/gml/3.2\" ")
+		    .append("xmlns:swe=\"http://www.opengis.net/swe/2.0\">");
+		
+		for (String proc : procedures) {
+			builder.append("<gda:procedure>" + proc + "</gda:procedure>");
+		}
+		for (String obsProp : observedProperties) {
+			builder.append("<gda:observedProperty>" + obsProp + "</gda:observedProperty>");
+		}
+		
+		builder.append("</gda:GetDataAvailability>");
 		return Entity.xml(builder.toString());
 	}
 	

@@ -37,7 +37,6 @@ public class RemarkedValueTransform implements ColumnTransform {
 		String result = null;
 		if(null != row) {
 			String in = row.getValue(inColumn);
-			log.debug("Matching " + in);
 			String remark = "";
 			String value = "";
 			Matcher m = REMARK_PATTERN.matcher(in);
