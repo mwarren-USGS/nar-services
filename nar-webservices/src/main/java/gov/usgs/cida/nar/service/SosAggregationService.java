@@ -23,6 +23,7 @@ import gov.usgs.cida.nude.out.TableResponse;
 import gov.usgs.cida.nude.plan.Plan;
 import gov.usgs.cida.nude.plan.PlanStep;
 import gov.usgs.cida.nude.resultset.inmemory.MuxResultSet;
+import gov.usgs.cida.sos.DataAvailabilityMember;
 import gov.usgs.cida.sos.OrderedFilter;
 import gov.usgs.webservices.framework.basic.MimeType;
 
@@ -34,9 +35,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -123,7 +126,7 @@ public class SosAggregationService {
 		
 		
 		final StringReader headerReader = new StringReader(header);
-		
+
 		final List<SOSConnector> sosConnectors = getSosConnectors(
 				sosUrl,
 				constituent,
@@ -296,10 +299,16 @@ public class SosAggregationService {
 		for (String columnName : columnMap.keySet()) {
 			List<String> procList = columnMap.get(columnName);
 			SortedSet<OrderedFilter> filters = new TreeSet<>();
-			SOSClient sosClient = new SOSClient(sosUrl, start, end, actualProperties, procList, stationId);
+
+			SOSClient gdaClient = new SOSClient(sosUrl, null, null, actualProperties, procList, null);
+			List<DataAvailabilityMember> dataAvailityMembers = gdaClient.getDataAvailability();
+			gdaClient.close();
+			
+			List<String> filteredStations = filterStationsByDataAvailibility(dataAvailityMembers, stationId);
+			SOSClient sosClient = new SOSClient(sosUrl, start, end, actualProperties, procList, filteredStations);
 			for (String procedure : procList) {
 				for (String prop : actualProperties) {
-					for (String featureOfInterest : stationId) {
+					for (String featureOfInterest : filteredStations) {
 						filters.add(new OrderedFilter(procedure, prop, featureOfInterest));
 					}
 				}
@@ -308,6 +317,25 @@ public class SosAggregationService {
 			sosConnectors.add(sosConnector);
 		}
 		return sosConnectors;
+	}
+	
+	private List<String> filterStationsByDataAvailibility(List<DataAvailabilityMember> dataAvailityMembers, final List<String> stationIds) {
+		List<String> filteredStationIds = new ArrayList<>();
+
+		if(stationIds != null) {
+			//filter features down to only those available
+			for(String staid : stationIds) {
+				for(DataAvailabilityMember da : dataAvailityMembers) {
+					if(da.getFeatureOfInterest().equals(staid)) {
+						if(!filteredStationIds.contains(staid)) {
+							filteredStationIds.add(staid);
+						}
+					}
+				}
+			}
+		}
+		
+		return filteredStationIds;
 	}
 	
 	private List<PlanStep> getAnnualLoadSteps(final List<PlanStep> prevSteps) {
