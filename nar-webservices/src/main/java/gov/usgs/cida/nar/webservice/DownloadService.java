@@ -97,7 +97,7 @@ public class DownloadService {
 			
 			if(ServiceParameterUtils.isDiscreteQwRequested(dataType, qwDataType)) {
 				addAggregatedSosEntry(zip, 
-						DownloadType.discreteQw,
+						DownloadType.sampleConcentrations,
 						mimeType,
 						dataType,
 						qwDataType,
@@ -313,7 +313,7 @@ public class DownloadService {
 		}
 
 		if(ServiceParameterUtils.isDiscreteQwRequested(dataType, qwDataType)) {
-			appendDataTypeDescription(sb, DownloadType.discreteQw);
+			appendDataTypeDescription(sb, DownloadType.sampleConcentrations);
 		}
 
 		if(ServiceParameterUtils.isAnnualLoadsRequested(dataType, qwDataType)) {

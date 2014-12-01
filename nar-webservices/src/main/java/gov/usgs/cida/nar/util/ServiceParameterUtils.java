@@ -29,7 +29,7 @@ public class ServiceParameterUtils {
 	}
 	
 	public static boolean isDiscreteQwRequested(final List<String> inDataTypes, final List<String> inQwDataTypes) {
-		return isQwParamRequested(inDataTypes, inQwDataTypes, DownloadType.discreteQw);
+		return isQwParamRequested(inDataTypes, inQwDataTypes, DownloadType.sampleConcentrations);
 	}
 
 	public static boolean isAnnualLoadsRequested(final List<String> inDataTypes, final List<String> inQwDataTypes) {

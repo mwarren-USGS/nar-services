@@ -100,7 +100,7 @@ public enum DownloadType {
 			Arrays.asList(
 					"http://cida.usgs.gov/def/NAR/procedure/daily_flow"
 					)),
-	discreteQw("Discrete QW", 
+	sampleConcentrations("Sample Concentrations", 
 			Arrays.asList(
 					"http://cida.usgs.gov/def/NAR/procedure/discrete_concentration"
 					)),
