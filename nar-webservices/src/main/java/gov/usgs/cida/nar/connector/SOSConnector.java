@@ -127,14 +127,14 @@ public class SOSConnector implements IConnector, Closeable {
 					}
 				})
 				.buildFilterStage();
+		ResultSet numericPrimaryKeyResultSet = new FilteredResultSet(numericColumnResultSet, makePrimaryKeyStage);
 		
 		FilterStage fixScientificNotationStage = new FilterStageBuilder(makePrimaryKeyStage.getOutputColumns())
 				.addTransform(valueColumn, new PlainStringNumberTransform(valueColumn))
 				.buildFilterStage();
+		ResultSet fixedScientificNotationResultSet = new FilteredResultSet(numericPrimaryKeyResultSet, fixScientificNotationStage);
 		
-		ResultSet numericPrimaryKeyResultSet = new FilteredResultSet(numericColumnResultSet, fixScientificNotationStage);
-		
-		return numericPrimaryKeyResultSet;
+		return fixedScientificNotationResultSet;
 	}
 
 	@Override
