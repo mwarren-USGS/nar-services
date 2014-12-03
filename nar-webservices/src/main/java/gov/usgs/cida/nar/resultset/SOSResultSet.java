@@ -14,7 +14,6 @@ import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.PriorityQueue;
 import java.util.SortedSet;
 import javax.xml.stream.XMLStreamException;
 import org.apache.commons.io.IOUtils;
