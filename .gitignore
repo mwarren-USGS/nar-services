@@ -9,3 +9,9 @@
 /nar-ncsosx/target/
 /nar-ncsosx/src/main/webapp/META-INF/context.xml
 nb-configuration.xml
+.project
+.settings
+.classpath
+target
+/nar-webservices/src/main/webapp/META-INF/
+catalina.base_IS_UNDEFINED/
