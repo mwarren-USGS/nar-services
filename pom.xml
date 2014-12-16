@@ -9,7 +9,6 @@
 
 	<modules>
 		<module>nar-geoserver</module>
-		<module>nar-ncsosx</module>
 		<module>nar-webservices</module>
 	</modules>
 
