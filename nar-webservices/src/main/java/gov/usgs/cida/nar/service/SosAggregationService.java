@@ -76,7 +76,6 @@ public class SosAggregationService {
 	private static final String AN_YIELD_IN_COL = "annual_yield";
 	private static final String AN_CONC_FLOW_WEIGHTED_IN_COL = "annual_concentration_flow_weighted";
 	
-	private static final String MON_CONC_FLOW_WEIGHTED_IN_COL = "monthly_concentration_flow_weighted";
 	private static final String MON_MASS_UPPER_95_IN_COL = "monthly_mass_upper_95";
 	private static final String MON_MASS_IN_COL = "monthly_mass";
 	private static final String MON_FLOW_IN_COL = "procedure";
@@ -95,7 +94,6 @@ public class SosAggregationService {
 	private static final String AN_YIELD_OUT_COL = "YIELD";
 	private static final String AN_CONC_FLOW_WEIGHTED_OUT_COL = "FWC";
 
-	private static final String MON_CONC_FLOW_WEIGHTED_OUT_COL = "FWC";
 	private static final String MON_MASS_UPPER_95_OUT_COL = "TONS_U95";
 	private static final String MON_MASS_OUT_COL = "TONS_LOAD";
 	private static final String MON_FLOW_OUT_COL = "FLOW";
@@ -406,7 +404,6 @@ public class SosAggregationService {
 							.addTransform(new SimpleColumn(SITE_FLOW_ID_IN_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), SITE_QW_ID_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(WY_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), DATE_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(MONTH_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), DATE_IN_COL) + 1)))
-							.addTransform(new SimpleColumn(MON_CONC_FLOW_WEIGHTED_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), MON_CONC_FLOW_WEIGHTED_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(MON_MASS_LOWER_95_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), MON_MASS_LOWER_95_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(MON_MASS_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), MON_MASS_IN_COL) + 1)))
 							.addTransform(new SimpleColumn(MON_MASS_UPPER_95_OUT_COL), new ColumnAlias(originals.get(indexOfCol(originals.getColumns(), MON_MASS_UPPER_95_IN_COL) + 1)))
@@ -426,7 +423,6 @@ public class SosAggregationService {
 		finalColList.add(allCols.get(indexOfCol(allCols, MON_MASS_OUT_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, MON_MASS_LOWER_95_OUT_COL)));
 		finalColList.add(allCols.get(indexOfCol(allCols, MON_MASS_UPPER_95_OUT_COL)));
-		finalColList.add(allCols.get(indexOfCol(allCols, MON_CONC_FLOW_WEIGHTED_OUT_COL)));
 		
 		ColumnGrouping finalCols = new ColumnGrouping(finalColList);
 		FilterStep removeUnusedColsStep = new FilterStep(new NudeFilterBuilder(finalCols)
