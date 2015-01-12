@@ -4,7 +4,7 @@
 #SITE_QW_NAME USGS station name for water-quality sampling
 #SITE_FLOW_ID USGS or other agency station identifier for streamflow measurement
 #SITE_FLOW_NAME USGS or other agency station name for streamflow measurement
-#DA Drainage area, in square miles
+#"DA Drainage area, in square miles"
 #LATITUDE Decimal latitude
 #LONGITUDE Decimal longitude
-#SITE_TYPE Type of NAWQA Fixed site; possibilities include Reference, Agriculture (Agricultural Indicator Site), Urban (Urban Indicator Site), Large Inland Rivers, and Coastal Rivers
+#"SITE_TYPE Type of NAWQA Fixed site; possibilities include Reference, Agriculture (Agricultural Indicator Site), Urban (Urban Indicator Site), Large Inland Rivers, and Coastal Rivers"
